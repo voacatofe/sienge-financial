@@ -1,0 +1,39 @@
+{
+  "server": {
+    "serverName": "Sienge Financial Database",
+    "serverURL": "http://localhost:8978",
+    "adminCredentialsSaveEnabled": true,
+    "anonymousAccessEnabled": false,
+    "authenticationEnabled": true,
+    "customConnectionsEnabled": true,
+    "localConnectionsEnabled": true,
+    "publicCredentialsSaveEnabled": false,
+    "enabledAuthProviders": ["local"]
+  },
+  "connections": {
+    "sienge_database": {
+      "driver": "postgresql",
+      "name": "Sienge Financial",
+      "savePassword": true,
+      "readOnly": false,
+      "configuration": {
+        "host": "db",
+        "port": "5432",
+        "database": "sienge_data",
+        "url": "jdbc:postgresql://db:5432/sienge_data",
+        "configurationType": "MANUAL",
+        "type": "dev",
+        "properties": {},
+        "providerProperties": {
+          "@dbeaver-show-non-default-db@": "false",
+          "@dbeaver-show-template-db@": "false"
+        },
+        "authModel": "native",
+        "username": "sienge_app"
+      },
+      "credentials": {
+        "userPassword": "sienge123"
+      }
+    }
+  }
+}

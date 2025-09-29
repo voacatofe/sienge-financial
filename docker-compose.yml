@@ -1,0 +1,97 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: sienge_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"  # Remove this line in production (see docker-compose.production.yml)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - sienge_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sync:
+    build: .
+    container_name: sienge_sync
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      SIENGE_SUBDOMAIN: ${SIENGE_SUBDOMAIN}
+      SIENGE_USERNAME: ${SIENGE_USERNAME}
+      SIENGE_PASSWORD_ABF: ${SIENGE_PASSWORD_ABF}
+      SYNC_START_DATE: ${SYNC_START_DATE}
+      SYNC_END_DATE: ${SYNC_END_DATE}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./sync_sienge.py:/app/sync_sienge.py:ro
+      - ./init_sync.sh:/app/init_sync.sh:ro
+      - ./cron_sync.sh:/app/cron_sync.sh:ro
+    networks:
+      - sienge_network
+
+  api:
+    build: ./api
+    container_name: sienge_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+    networks:
+      - sienge_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: sienge_cloudbeaver
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8978:8978"
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
+    environment:
+      CB_SERVER_NAME: Sienge Financial DB
+    networks:
+      - sienge_network
+
+networks:
+  sienge_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  cloudbeaver_data:
+    driver: local

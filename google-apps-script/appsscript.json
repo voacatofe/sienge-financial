@@ -1,0 +1,20 @@
+{
+  "timeZone": "America/Sao_Paulo",
+  "dependencies": {
+    "enabledAdvancedServices": []
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "dataStudio": {
+    "name": "Sienge Financial Connector",
+    "logoUrl": "https://www.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png",
+    "company": "Sienge Financial Integration",
+    "companyUrl": "https://localhost:8000",
+    "addOnUrl": "https://localhost:8000",
+    "supportUrl": "https://localhost:8000",
+    "description": "Conector unificado para dados financeiros do Sienge (Contas a Receber e Contas a Pagar)",
+    "sources": ["DOMAIN"],
+    "authType": ["NONE"],
+    "feeType": ["FREE"]
+  }
+}

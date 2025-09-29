@@ -1,0 +1,67 @@
+# Environment files with credentials
+.env
+.env.*
+!.env.example
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation (not needed in container)
+README*.md
+docs/
+*.md
+!requirements.txt
+
+# Google Apps Script (not needed in container)
+google-apps-script/
+
+# Database dumps and backups
+*.sql
+*.dump
+*.backup
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# CI/CD
+.github/
+.gitlab-ci.yml

@@ -1,0 +1,62 @@
+# docker-compose.production.yml
+# Production-optimized configuration for Easypanel deployment
+#
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.production.yml up -d
+#
+# This file overrides docker-compose.yml with production-specific settings
+
+services:
+  db:
+    # Remove port exposure - database should NOT be accessible externally
+    ports: []
+
+    # Production restart policy
+    restart: always
+
+    # Production logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  sync:
+    # Production restart policy
+    restart: always
+
+    # Production logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Remove volume mounts (use image files instead)
+    volumes: []
+
+  api:
+    # Production restart policy
+    restart: always
+
+    # Production logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Increase workers for production
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+
+    # More aggressive health checks
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+
+  # Remove CloudBeaver in production - use external database management tool
+  cloudbeaver:
+    profiles:
+      - debug  # Only start if --profile debug is specified
