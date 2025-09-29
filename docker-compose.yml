@@ -4,60 +4,66 @@ services:
     container_name: sienge_postgres
     restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB:-sienge_data}
+      POSTGRES_USER: ${POSTGRES_USER:-sienge_app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"  # Remove this line in production (see docker-compose.production.yml)
+    # ports:
+    #   - "5432:5432"  # Uncomment for local development only
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
       - sienge_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sienge_app} -d ${POSTGRES_DB:-sienge_data}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   sync:
     build: .
     container_name: sienge_sync
-    restart: unless-stopped
+    restart: always
     depends_on:
       db:
         condition: service_healthy
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB:-sienge_data}
+      POSTGRES_USER: ${POSTGRES_USER:-sienge_app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       SIENGE_SUBDOMAIN: ${SIENGE_SUBDOMAIN}
       SIENGE_USERNAME: ${SIENGE_USERNAME}
       SIENGE_PASSWORD_ABF: ${SIENGE_PASSWORD_ABF}
-      SYNC_START_DATE: ${SYNC_START_DATE}
-      SYNC_END_DATE: ${SYNC_END_DATE}
+      SYNC_START_DATE: ${SYNC_START_DATE:-2024-01-01}
+      SYNC_END_DATE: ${SYNC_END_DATE:-2024-12-31}
       PGPASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - ./sync_sienge.py:/app/sync_sienge.py:ro
-      - ./init_sync.sh:/app/init_sync.sh:ro
-      - ./cron_sync.sh:/app/cron_sync.sh:ro
     networks:
       - sienge_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   api:
     build: ./api
     container_name: sienge_api
-    restart: unless-stopped
+    restart: always
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8000:8000"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB:-sienge_data}
+      POSTGRES_USER: ${POSTGRES_USER:-sienge_app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
@@ -65,10 +71,16 @@ services:
       - sienge_network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
-      interval: 30s
+      interval: 15s
       timeout: 3s
       retries: 3
-      start_period: 10s
+      start_period: 20s
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   cloudbeaver:
     image: dbeaver/cloudbeaver:latest
@@ -85,6 +97,8 @@ services:
       CB_SERVER_NAME: Sienge Financial DB
     networks:
       - sienge_network
+    profiles:
+      - debug  # Only start with --profile debug
 
 networks:
   sienge_network:

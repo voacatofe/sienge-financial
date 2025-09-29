@@ -123,24 +123,19 @@ API_WORKERS=4
 
 ### 4️⃣ Configurar Docker Compose
 
-No Easypanel, especifique o arquivo de configuração:
+No Easypanel, use o arquivo padrão:
 
-**Desenvolvimento/Teste**:
 ```yaml
 docker-compose.yml
 ```
 
-**Produção** (recomendado):
-```yaml
-docker-compose.yml -f docker-compose.production.yml
-```
-
-A versão de produção (`docker-compose.production.yml`) inclui:
-- ✅ PostgreSQL não exposto externamente
-- ✅ CloudBeaver desabilitado (use ferramenta externa)
+Este arquivo único já está otimizado para produção e inclui:
+- ✅ PostgreSQL não exposto externamente (porta comentada)
+- ✅ CloudBeaver desabilitado por padrão (apenas com `--profile debug`)
 - ✅ Logging otimizado (10MB max por arquivo, 3 arquivos)
-- ✅ 4 workers do Uvicorn
-- ✅ Restart automático
+- ✅ 4 workers do Uvicorn para alta performance
+- ✅ Restart automático (`restart: always`)
+- ✅ Valores padrão para todas as variáveis
 
 ### 5️⃣ Configurar Rede e Portas
 
