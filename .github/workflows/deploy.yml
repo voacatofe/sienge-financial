@@ -1,0 +1,25 @@
+name: Deploy to Easypanel
+
+on:
+  push:
+    branches:
+      - main  # Trigger deploy quando push for feito na branch main
+  workflow_dispatch:  # Permite trigger manual através da interface do GitHub
+
+jobs:
+  deploy:
+    name: Deploy to Easypanel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Deploy to Easypanel
+        run: |
+          curl -X POST "${{ secrets.EASYPANEL_DEPLOY_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+
+      - name: ✅ Deployment triggered
+        run: |
+          echo "✅ Deployment successfully triggered on Easypanel"
+          echo "🔗 Easypanel will now pull the latest code and rebuild containers"
+          echo "📊 Check your Easypanel dashboard for deployment status"
