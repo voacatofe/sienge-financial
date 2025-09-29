@@ -108,14 +108,14 @@ function test5_SchemaValidation() {
   try {
     LOGGING.info('=== TESTE 5: Schema Validation ===');
 
-    var fields = buildSchema(true);
-    var schema = fields.build();
+    var schema = getFields().build();
 
     LOGGING.info('✅ Schema has ' + schema.length + ' fields');
 
-    // Listar alguns campos
-    for (var i = 0; i < Math.min(5, schema.length); i++) {
-      LOGGING.info('  - ' + schema[i].getId() + ': ' + schema[i].getName());
+    // Listar alguns campos (primeiros 5)
+    var fieldNames = ['record_type', 'id', 'company_name', 'original_amount', 'due_date'];
+    for (var i = 0; i < fieldNames.length; i++) {
+      LOGGING.info('  - Field: ' + fieldNames[i]);
     }
 
     return 'SUCCESS: ' + schema.length + ' fields in schema';

@@ -67,12 +67,9 @@ function getSchema(request) {
   // Validar configuração
   validateConfiguration(request.configParams);
 
-  // Sempre incluir todos os campos (simplificado)
-  var fields = buildSchema(true);
-
   LOGGING.info('Schema built successfully');
 
-  return { schema: fields.build() };
+  return { schema: getFields().build() };
 }
 
 /**
@@ -118,6 +115,12 @@ function getData(request) {
 
     LOGGING.info('Transforming records...');
 
+    // Obter IDs dos campos solicitados
+    var requestedFieldIds = request.fields.map(function(f) { return f.name; });
+
+    // Construir schema correto usando forIds()
+    var requestedSchema = getFields().forIds(requestedFieldIds).build();
+
     // Sempre calcular métricas (simplificado)
     var rows = transformRecords(
       allRecords,
@@ -132,7 +135,7 @@ function getData(request) {
     // ==========================================
 
     return {
-      schema: request.fields,
+      schema: requestedSchema,
       rows: rows
     };
 

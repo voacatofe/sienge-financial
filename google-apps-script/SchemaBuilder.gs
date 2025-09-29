@@ -7,16 +7,16 @@
  */
 
 /**
- * Constrói schema completo do conector
+ * Retorna objeto fields sem build() - usado por getSchema e getData
+ * Permite uso de forIds() para filtrar campos solicitados
  */
-function buildSchema(includeSpecificFields) {
+function getFields() {
   var fields = cc.getFields();
   var types = FIELD_TYPES;
-
-  LOGGING.info('Building unified schema...');
+  var aggregations = AGGREGATION_TYPES;
 
   // ==========================================
-  // GRUPO 1: Identificação (5 campos)
+  // GRUPO 1: IDENTIFICAÇÃO (5 campos)
   // ==========================================
 
   fields.newDimension()
@@ -48,7 +48,7 @@ function buildSchema(includeSpecificFields) {
     .setType(types.NUMBER);
 
   // ==========================================
-  // GRUPO 2: Empresa (14 campos)
+  // GRUPO 2: EMPRESA E ORGANIZAÇÃO (14 campos)
   // ==========================================
 
   fields.newDimension()
@@ -122,7 +122,7 @@ function buildSchema(includeSpecificFields) {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 3: Contraparte Unificada (3 campos)
+  // GRUPO 3: CONTRAPARTE UNIFICADA (3 campos)
   // ==========================================
 
   fields.newDimension()
@@ -144,7 +144,7 @@ function buildSchema(includeSpecificFields) {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 4: Documento (5 campos)
+  // GRUPO 4: DOCUMENTO (5 campos)
   // ==========================================
 
   fields.newDimension()
@@ -174,41 +174,41 @@ function buildSchema(includeSpecificFields) {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 5: Valores Financeiros (6 campos)
+  // GRUPO 5: MÉTRICAS FINANCEIRAS (6 campos)
   // ==========================================
 
   fields.newMetric()
     .setId('original_amount')
     .setName('Valor Original')
     .setType(types.CURRENCY_BRL)
-    .setAggregation(AGGREGATION_TYPES.SUM);
+    .setAggregation(aggregations.SUM);
 
   fields.newMetric()
     .setId('discount_amount')
     .setName('Valor do Desconto')
     .setType(types.CURRENCY_BRL)
-    .setAggregation(AGGREGATION_TYPES.SUM);
+    .setAggregation(aggregations.SUM);
 
   fields.newMetric()
     .setId('tax_amount')
     .setName('Valor do Imposto')
     .setType(types.CURRENCY_BRL)
-    .setAggregation(AGGREGATION_TYPES.SUM);
+    .setAggregation(aggregations.SUM);
 
   fields.newMetric()
     .setId('balance_amount')
     .setName('Saldo Devedor')
     .setType(types.CURRENCY_BRL)
-    .setAggregation(AGGREGATION_TYPES.SUM);
+    .setAggregation(aggregations.SUM);
 
   fields.newMetric()
     .setId('corrected_balance_amount')
     .setName('Saldo Corrigido')
     .setType(types.CURRENCY_BRL)
-    .setAggregation(AGGREGATION_TYPES.SUM);
+    .setAggregation(aggregations.SUM);
 
   // ==========================================
-  // GRUPO 6: Datas (4 campos)
+  // GRUPO 6: DATAS (4 campos)
   // ==========================================
 
   fields.newDimension()
@@ -232,7 +232,7 @@ function buildSchema(includeSpecificFields) {
     .setType(types.YEAR_MONTH_DAY);
 
   // ==========================================
-  // GRUPO 7: Indexação (2 campos)
+  // GRUPO 7: INDEXAÇÃO (2 campos)
   // ==========================================
 
   fields.newDimension()
@@ -247,7 +247,7 @@ function buildSchema(includeSpecificFields) {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 8: Movimentações Financeiras (4 campos CALCULADOS)
+  // GRUPO 8: MOVIMENTAÇÕES FINANCEIRAS (4 campos calculados)
   // ==========================================
 
   fields.newMetric()
@@ -255,14 +255,14 @@ function buildSchema(includeSpecificFields) {
     .setName('Total de Movimentações')
     .setDescription('Quantidade de recebimentos ou pagamentos')
     .setType(types.NUMBER)
-    .setAggregation(AGGREGATION_TYPES.SUM);
+    .setAggregation(aggregations.SUM);
 
   fields.newMetric()
     .setId('valor_total_movimentado')
     .setName('Valor Total Movimentado')
     .setDescription('Soma de todos recebimentos ou pagamentos')
     .setType(types.CURRENCY_BRL)
-    .setAggregation(AGGREGATION_TYPES.SUM);
+    .setAggregation(aggregations.SUM);
 
   fields.newDimension()
     .setId('data_ultima_movimentacao')
@@ -277,139 +277,131 @@ function buildSchema(includeSpecificFields) {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 9: Campos Específicos de INCOME
-  // (Apenas se includeSpecificFields = true)
+  // GRUPO 9: CAMPOS ESPECÍFICOS DE INCOME (13 campos)
   // ==========================================
 
-  if (includeSpecificFields) {
-    fields.newDimension()
-      .setId('income_periodicity_type')
-      .setName('[Income] Periodicidade')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_periodicity_type')
+    .setName('[Income] Periodicidade')
+    .setType(types.TEXT);
 
-    fields.newMetric()
-      .setId('income_embedded_interest_amount')
-      .setName('[Income] Juros Embutidos')
-      .setType(types.CURRENCY_BRL)
-      .setAggregation(AGGREGATION_TYPES.SUM);
+  fields.newMetric()
+    .setId('income_embedded_interest_amount')
+    .setName('[Income] Juros Embutidos')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM);
 
-    fields.newDimension()
-      .setId('income_interest_type')
-      .setName('[Income] Tipo de Juros')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_interest_type')
+    .setName('[Income] Tipo de Juros')
+    .setType(types.TEXT);
 
-    fields.newMetric()
-      .setId('income_interest_rate')
-      .setName('[Income] Taxa de Juros (%)')
-      .setType(types.PERCENT);
+  fields.newMetric()
+    .setId('income_interest_rate')
+    .setName('[Income] Taxa de Juros (%)')
+    .setType(types.PERCENT);
 
-    fields.newDimension()
-      .setId('income_correction_type')
-      .setName('[Income] Tipo de Correção')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_correction_type')
+    .setName('[Income] Tipo de Correção')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('income_interest_base_date')
-      .setName('[Income] Data Base dos Juros')
-      .setType(types.YEAR_MONTH_DAY);
+  fields.newDimension()
+    .setId('income_interest_base_date')
+    .setName('[Income] Data Base dos Juros')
+    .setType(types.YEAR_MONTH_DAY);
 
-    fields.newDimension()
-      .setId('income_defaulter_situation')
-      .setName('[Income] Situação de Inadimplência')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_defaulter_situation')
+    .setName('[Income] Situação de Inadimplência')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('income_sub_judicie')
-      .setName('[Income] Sub-Júdice')
-      .setDescription('S/N')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_sub_judicie')
+    .setName('[Income] Sub-Júdice')
+    .setDescription('S/N')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('income_main_unit')
-      .setName('[Income] Unidade Principal')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_main_unit')
+    .setName('[Income] Unidade Principal')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('income_installment_number')
-      .setName('[Income] Número da Parcela')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_installment_number')
+    .setName('[Income] Número da Parcela')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('income_payment_term_id')
-      .setName('[Income] ID Condição de Pagamento')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_payment_term_id')
+    .setName('[Income] ID Condição de Pagamento')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('income_payment_term_description')
-      .setName('[Income] Condição de Pagamento')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('income_payment_term_description')
+    .setName('[Income] Condição de Pagamento')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('income_bearer_id')
-      .setName('[Income] ID do Portador')
-      .setType(types.NUMBER);
-  }
+  fields.newDimension()
+    .setId('income_bearer_id')
+    .setName('[Income] ID do Portador')
+    .setType(types.NUMBER);
 
   // ==========================================
-  // GRUPO 10: Campos Específicos de OUTCOME
-  // (Apenas se includeSpecificFields = true)
+  // GRUPO 10: CAMPOS ESPECÍFICOS DE OUTCOME (9 campos)
   // ==========================================
 
-  if (includeSpecificFields) {
-    fields.newDimension()
-      .setId('outcome_forecast_document')
-      .setName('[Outcome] Documento de Previsão')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('outcome_forecast_document')
+    .setName('[Outcome] Documento de Previsão')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('outcome_consistency_status')
-      .setName('[Outcome] Status de Consistência')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('outcome_consistency_status')
+    .setName('[Outcome] Status de Consistência')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('outcome_authorization_status')
-      .setName('[Outcome] Status de Autorização')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('outcome_authorization_status')
+    .setName('[Outcome] Status de Autorização')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('outcome_registered_user_id')
-      .setName('[Outcome] ID Usuário de Cadastro')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('outcome_registered_user_id')
+    .setName('[Outcome] ID Usuário de Cadastro')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('outcome_registered_by')
-      .setName('[Outcome] Cadastrado Por')
-      .setType(types.TEXT);
+  fields.newDimension()
+    .setId('outcome_registered_by')
+    .setName('[Outcome] Cadastrado Por')
+    .setType(types.TEXT);
 
-    fields.newDimension()
-      .setId('outcome_registered_date')
-      .setName('[Outcome] Data de Cadastro')
-      .setType(types.YEAR_MONTH_DAY_HOUR);
+  fields.newDimension()
+    .setId('outcome_registered_date')
+    .setName('[Outcome] Data de Cadastro')
+    .setType(types.YEAR_MONTH_DAY_HOUR);
 
-    // Métricas de arrays JSONB de Outcome
-    fields.newMetric()
-      .setId('outcome_total_departamentos')
-      .setName('[Outcome] Qtd. Departamentos')
-      .setDescription('Total de departamentos vinculados')
-      .setType(types.NUMBER)
-      .setAggregation(AGGREGATION_TYPES.SUM);
+  // Métricas de arrays JSONB de Outcome
+  fields.newMetric()
+    .setId('outcome_total_departamentos')
+    .setName('[Outcome] Qtd. Departamentos')
+    .setDescription('Total de departamentos vinculados')
+    .setType(types.NUMBER)
+    .setAggregation(aggregations.SUM);
 
-    fields.newMetric()
-      .setId('outcome_total_edificacoes')
-      .setName('[Outcome] Qtd. Edificações')
-      .setDescription('Total de edificações vinculadas')
-      .setType(types.NUMBER)
-      .setAggregation(AGGREGATION_TYPES.SUM);
+  fields.newMetric()
+    .setId('outcome_total_edificacoes')
+    .setName('[Outcome] Qtd. Edificações')
+    .setDescription('Total de edificações vinculadas')
+    .setType(types.NUMBER)
+    .setAggregation(aggregations.SUM);
 
-    fields.newMetric()
-      .setId('outcome_total_autorizacoes')
-      .setName('[Outcome] Qtd. Autorizações')
-      .setDescription('Total de autorizações')
-      .setType(types.NUMBER)
-      .setAggregation(AGGREGATION_TYPES.SUM);
-  }
-
-  LOGGING.info('Schema built successfully with ' + fields.build().length + ' fields');
+  fields.newMetric()
+    .setId('outcome_total_autorizacoes')
+    .setName('[Outcome] Qtd. Autorizações')
+    .setDescription('Total de autorizações')
+    .setType(types.NUMBER)
+    .setAggregation(aggregations.SUM);
 
   return fields;
 }
