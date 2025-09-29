@@ -176,6 +176,8 @@ function countJsonbArray(jsonbArray) {
  * Busca dados com cache
  */
 function cachedFetch(url) {
+  LOGGING.info('Fetching URL: ' + url);
+
   var cache = CacheService.getUserCache();
   var cacheKey = 'api_' + Utilities.base64Encode(url);
 
@@ -183,32 +185,58 @@ function cachedFetch(url) {
   var cached = cache.get(cacheKey);
   if (cached) {
     LOGGING.info('Cache hit for: ' + url);
-    return JSON.parse(cached);
+    try {
+      return JSON.parse(cached);
+    } catch (e) {
+      LOGGING.warn('Failed to parse cached data, fetching fresh');
+      cache.remove(cacheKey);
+    }
   }
 
   // Não tem cache, busca da API
   LOGGING.info('Cache miss, fetching: ' + url);
 
   try {
-    var response = UrlFetchApp.fetch(url, {
-      muteHttpExceptions: true
-    });
+    var options = {
+      'method': 'GET',
+      'muteHttpExceptions': true,
+      'contentType': 'application/json',
+      'headers': {
+        'Accept': 'application/json'
+      }
+    };
 
+    var response = UrlFetchApp.fetch(url, options);
     var responseCode = response.getResponseCode();
+    var contentText = response.getContentText();
+
+    LOGGING.info('Response code: ' + responseCode);
+    LOGGING.info('Response length: ' + contentText.length);
 
     if (responseCode !== 200) {
-      throw new Error('HTTP ' + responseCode + ': ' + response.getContentText());
+      LOGGING.error('HTTP error ' + responseCode + ': ' + contentText.substring(0, 500));
+      throw new Error('HTTP ' + responseCode + ': ' + contentText.substring(0, 200));
     }
 
-    var data = JSON.parse(response.getContentText());
+    if (!contentText || contentText.length === 0) {
+      throw new Error('Empty response from API');
+    }
+
+    var data = JSON.parse(contentText);
 
     // Salva no cache
-    cache.put(cacheKey, JSON.stringify(data), CONFIG.CACHE_DURATION_SECONDS);
+    try {
+      cache.put(cacheKey, JSON.stringify(data), CONFIG.CACHE_DURATION_SECONDS);
+    } catch (cacheError) {
+      LOGGING.warn('Failed to cache response: ' + cacheError);
+      // Continue mesmo se cache falhar
+    }
 
     return data;
   } catch (e) {
-    LOGGING.error('Failed to fetch URL: ' + url, e);
-    throw e;
+    LOGGING.error('Failed to fetch URL: ' + url);
+    LOGGING.error('Error details: ' + e.toString());
+    throw new Error('API fetch failed: ' + e.message + ' (URL: ' + url + ')');
   }
 }
 
