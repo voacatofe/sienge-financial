@@ -10,9 +10,10 @@
 
 /**
  * Busca todos os dados unificados (Income + Outcome)
+ * URL da API é FIXA no CONFIG
  */
 function fetchAllData(configParams) {
-  var apiUrl = normalizeUrl(configParams.apiUrl);
+  var apiUrl = CONFIG.API_URL;
   var includeIncome = configParams.includeIncome !== 'false';
   var includeOutcome = configParams.includeOutcome !== 'false';
 
@@ -131,10 +132,10 @@ function fetchAllPaginated(baseUrl) {
 }
 
 /**
- * Testa conexão com a API
+ * Testa conexão com a API (URL fixa)
  */
-function testApiConnection(apiUrl) {
-  var url = normalizeUrl(apiUrl) + '/api/health';
+function testApiConnection() {
+  var url = CONFIG.API_URL + '/api/health';
 
   try {
     var response = cachedFetch(url);

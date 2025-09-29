@@ -15,8 +15,8 @@ var cc = DataStudioApp.createCommunityConnector();
 // ==========================================
 
 var CONFIG = {
-  // API Configuration
-  DEFAULT_API_URL: 'http://localhost:8000',
+  // API Configuration (FIXED - não solicita ao usuário)
+  API_URL: 'https://sienge-app.hvlihi.easypanel.host',
   MAX_RECORDS_PER_REQUEST: 1000,
 
   // Cache Configuration
@@ -75,41 +75,20 @@ var ERROR_MESSAGES = {
 
 /**
  * Opções disponíveis para o usuário configurar
+ * SIMPLIFICADO: Apenas 2 checkboxes
  */
 var USER_CONFIG_OPTIONS = {
-  API_URL: {
-    id: 'apiUrl',
-    name: 'URL da API',
-    helpText: 'URL base da sua API Sienge Financial',
-    placeholder: 'http://seu-servidor:8000',
-    required: true
-  },
-
   INCLUDE_INCOME: {
     id: 'includeIncome',
     name: 'Incluir Contas a Receber',
-    helpText: 'Buscar dados de contas a receber da API',
+    helpText: 'Buscar dados de contas a receber',
     defaultValue: true
   },
 
   INCLUDE_OUTCOME: {
     id: 'includeOutcome',
     name: 'Incluir Contas a Pagar',
-    helpText: 'Buscar dados de contas a pagar da API',
-    defaultValue: true
-  },
-
-  CALCULATE_METRICS: {
-    id: 'calculateMetrics',
-    name: 'Calcular Métricas de Movimentações',
-    helpText: 'Processar arrays JSONB para calcular totais de recebimentos/pagamentos (pode aumentar tempo de processamento)',
-    defaultValue: true
-  },
-
-  INCLUDE_SPECIFIC_FIELDS: {
-    id: 'includeSpecificFields',
-    name: 'Incluir Campos Específicos',
-    helpText: 'Incluir campos específicos de cada tipo (income_* e outcome_*)',
+    helpText: 'Buscar dados de contas a pagar',
     defaultValue: true
   }
 };

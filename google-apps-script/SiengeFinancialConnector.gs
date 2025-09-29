@@ -21,35 +21,24 @@ function getAuthType() {
 
 /**
  * Constrói a interface de configuração do conector
- * Permite ao usuário configurar URL da API e opções de dados
+ * SIMPLIFICADO: Apenas 2 checkboxes
  */
 function getConfig(request) {
   var config = cc.getConfig();
 
-  LOGGING.info('Building configuration UI');
+  LOGGING.info('Building simplified configuration UI');
 
   // ==========================================
-  // Configuração da API
+  // Instruções
   // ==========================================
 
   config.newInfo()
     .setId('instructions')
-    .setText('Configure a conexão com sua API Sienge Financial');
-
-  config.newTextInput()
-    .setId(USER_CONFIG_OPTIONS.API_URL.id)
-    .setName(USER_CONFIG_OPTIONS.API_URL.name)
-    .setHelpText(USER_CONFIG_OPTIONS.API_URL.helpText)
-    .setPlaceholder(USER_CONFIG_OPTIONS.API_URL.placeholder)
-    .setAllowOverride(true);
+    .setText('Selecione quais tipos de dados financeiros deseja visualizar no Looker Studio');
 
   // ==========================================
   // Opções de Dados
   // ==========================================
-
-  config.newInfo()
-    .setId('dataOptions')
-    .setText('Selecione quais dados deseja incluir');
 
   config.newCheckbox()
     .setId(USER_CONFIG_OPTIONS.INCLUDE_INCOME.id)
@@ -63,30 +52,6 @@ function getConfig(request) {
     .setHelpText(USER_CONFIG_OPTIONS.INCLUDE_OUTCOME.helpText)
     .setAllowOverride(true);
 
-  // ==========================================
-  // Opções de Performance
-  // ==========================================
-
-  config.newInfo()
-    .setId('performanceOptions')
-    .setText('Opções de performance (desmarque para melhorar velocidade)');
-
-  config.newCheckbox()
-    .setId(USER_CONFIG_OPTIONS.CALCULATE_METRICS.id)
-    .setName(USER_CONFIG_OPTIONS.CALCULATE_METRICS.name)
-    .setHelpText(USER_CONFIG_OPTIONS.CALCULATE_METRICS.helpText)
-    .setAllowOverride(true);
-
-  config.newCheckbox()
-    .setId(USER_CONFIG_OPTIONS.INCLUDE_SPECIFIC_FIELDS.id)
-    .setName(USER_CONFIG_OPTIONS.INCLUDE_SPECIFIC_FIELDS.name)
-    .setHelpText(USER_CONFIG_OPTIONS.INCLUDE_SPECIFIC_FIELDS.helpText)
-    .setAllowOverride(true);
-
-  // ==========================================
-  // Validação da configuração
-  // ==========================================
-
   config.setDateRangeRequired(false);
 
   return config.build();
@@ -94,7 +59,7 @@ function getConfig(request) {
 
 /**
  * Retorna o schema de campos do conector
- * Constrói schema unificado com 79 campos
+ * Schema completo com todos os 79 campos (sempre)
  */
 function getSchema(request) {
   LOGGING.info('Building schema for Looker Studio');
@@ -102,11 +67,8 @@ function getSchema(request) {
   // Validar configuração
   validateConfiguration(request.configParams);
 
-  // Determinar se deve incluir campos específicos
-  var includeSpecificFields = request.configParams.includeSpecificFields !== 'false';
-
-  // Construir schema
-  var fields = buildSchema(includeSpecificFields);
+  // Sempre incluir todos os campos (simplificado)
+  var fields = buildSchema(true);
 
   LOGGING.info('Schema built successfully');
 
@@ -156,12 +118,11 @@ function getData(request) {
 
     LOGGING.info('Transforming records...');
 
-    var calculateMetrics = request.configParams.calculateMetrics !== 'false';
-
+    // Sempre calcular métricas (simplificado)
     var rows = transformRecords(
       allRecords,
       request.fields,
-      calculateMetrics
+      true
     );
 
     LOGGING.info('Transformation complete: ' + rows.length + ' rows');
@@ -186,23 +147,9 @@ function getData(request) {
 
 /**
  * Valida a configuração do usuário
+ * SIMPLIFICADO: URL é fixa, só valida checkboxes
  */
 function validateConfiguration(configParams) {
-  // Validar URL da API
-  if (!configParams.apiUrl) {
-    return createUserError(
-      ERROR_MESSAGES.MISSING_API_URL,
-      'configParams.apiUrl is missing'
-    );
-  }
-
-  if (!isValidUrl(configParams.apiUrl)) {
-    return createUserError(
-      ERROR_MESSAGES.INVALID_API_URL,
-      'Invalid URL format: ' + configParams.apiUrl
-    );
-  }
-
   // Validar que pelo menos um tipo está selecionado
   var includeIncome = configParams.includeIncome !== 'false';
   var includeOutcome = configParams.includeOutcome !== 'false';
