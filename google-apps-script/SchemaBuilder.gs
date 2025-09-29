@@ -3,7 +3,7 @@
  * Construtor de Schema Unificado para Sienge Financial Connector
  *
  * Define todos os 79 campos unificados (Income + Outcome)
- * Organizado em 10 grupos lógicos
+ * Organizado seguindo padrão do Looker Studio: Dimensões primeiro, Métricas depois
  */
 
 /**
@@ -16,7 +16,7 @@ function getFields() {
   var aggregations = AGGREGATION_TYPES;
 
   // ==========================================
-  // GRUPO 1: IDENTIFICAÇÃO (5 campos)
+  // DIMENSÕES - PARTE 1: IDENTIFICAÇÃO E TIPOS
   // ==========================================
 
   fields.newDimension()
@@ -48,7 +48,37 @@ function getFields() {
     .setType(types.NUMBER);
 
   // ==========================================
-  // GRUPO 2: EMPRESA E ORGANIZAÇÃO (14 campos)
+  // DIMENSÕES - PARTE 2: DATAS
+  // ==========================================
+
+  fields.newDimension()
+    .setId('due_date')
+    .setName('Data de Vencimento')
+    .setType(types.YEAR_MONTH_DAY);
+
+  fields.newDimension()
+    .setId('issue_date')
+    .setName('Data de Emissão')
+    .setType(types.YEAR_MONTH_DAY);
+
+  fields.newDimension()
+    .setId('bill_date')
+    .setName('Data da Conta')
+    .setType(types.YEAR_MONTH_DAY);
+
+  fields.newDimension()
+    .setId('installment_base_date')
+    .setName('Data Base da Parcela')
+    .setType(types.YEAR_MONTH_DAY);
+
+  fields.newDimension()
+    .setId('data_ultima_movimentacao')
+    .setName('Data da Última Movimentação')
+    .setDescription('Data do último recebimento ou pagamento')
+    .setType(types.YEAR_MONTH_DAY);
+
+  // ==========================================
+  // DIMENSÕES - PARTE 3: EMPRESA E ORGANIZAÇÃO
   // ==========================================
 
   fields.newDimension()
@@ -122,7 +152,7 @@ function getFields() {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 3: CONTRAPARTE UNIFICADA (3 campos)
+  // DIMENSÕES - PARTE 4: CONTRAPARTE (Cliente/Fornecedor)
   // ==========================================
 
   fields.newDimension()
@@ -144,7 +174,7 @@ function getFields() {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 4: DOCUMENTO (5 campos)
+  // DIMENSÕES - PARTE 5: DOCUMENTO
   // ==========================================
 
   fields.newDimension()
@@ -174,65 +204,7 @@ function getFields() {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 5: MÉTRICAS FINANCEIRAS (6 campos)
-  // ==========================================
-
-  fields.newMetric()
-    .setId('original_amount')
-    .setName('Valor Original')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM);
-
-  fields.newMetric()
-    .setId('discount_amount')
-    .setName('Valor do Desconto')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM);
-
-  fields.newMetric()
-    .setId('tax_amount')
-    .setName('Valor do Imposto')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM);
-
-  fields.newMetric()
-    .setId('balance_amount')
-    .setName('Saldo Devedor')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM);
-
-  fields.newMetric()
-    .setId('corrected_balance_amount')
-    .setName('Saldo Corrigido')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM);
-
-  // ==========================================
-  // GRUPO 6: DATAS (4 campos)
-  // ==========================================
-
-  fields.newDimension()
-    .setId('due_date')
-    .setName('Data de Vencimento')
-    .setType(types.YEAR_MONTH_DAY);
-
-  fields.newDimension()
-    .setId('issue_date')
-    .setName('Data de Emissão')
-    .setType(types.YEAR_MONTH_DAY);
-
-  fields.newDimension()
-    .setId('bill_date')
-    .setName('Data da Conta')
-    .setType(types.YEAR_MONTH_DAY);
-
-  fields.newDimension()
-    .setId('installment_base_date')
-    .setName('Data Base da Parcela')
-    .setType(types.YEAR_MONTH_DAY);
-
-  // ==========================================
-  // GRUPO 7: INDEXAÇÃO (2 campos)
+  // DIMENSÕES - PARTE 6: INDEXAÇÃO
   // ==========================================
 
   fields.newDimension()
@@ -247,28 +219,8 @@ function getFields() {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 8: MOVIMENTAÇÕES FINANCEIRAS (4 campos calculados)
+  // DIMENSÕES - PARTE 7: STATUS E SITUAÇÃO
   // ==========================================
-
-  fields.newMetric()
-    .setId('total_movimentacoes')
-    .setName('Total de Movimentações')
-    .setDescription('Quantidade de recebimentos ou pagamentos')
-    .setType(types.NUMBER)
-    .setAggregation(aggregations.SUM);
-
-  fields.newMetric()
-    .setId('valor_total_movimentado')
-    .setName('Valor Total Movimentado')
-    .setDescription('Soma de todos recebimentos ou pagamentos')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM);
-
-  fields.newDimension()
-    .setId('data_ultima_movimentacao')
-    .setName('Data da Última Movimentação')
-    .setDescription('Data do último recebimento ou pagamento')
-    .setType(types.YEAR_MONTH_DAY);
 
   fields.newDimension()
     .setId('situacao_pagamento')
@@ -277,7 +229,7 @@ function getFields() {
     .setType(types.TEXT);
 
   // ==========================================
-  // GRUPO 9: CAMPOS ESPECÍFICOS DE INCOME (13 campos)
+  // DIMENSÕES - PARTE 8: INCOME - CAMPOS ESPECÍFICOS
   // ==========================================
 
   fields.newDimension()
@@ -285,21 +237,10 @@ function getFields() {
     .setName('[Income] Periodicidade')
     .setType(types.TEXT);
 
-  fields.newMetric()
-    .setId('income_embedded_interest_amount')
-    .setName('[Income] Juros Embutidos')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM);
-
   fields.newDimension()
     .setId('income_interest_type')
     .setName('[Income] Tipo de Juros')
     .setType(types.TEXT);
-
-  fields.newMetric()
-    .setId('income_interest_rate')
-    .setName('[Income] Taxa de Juros (%)')
-    .setType(types.PERCENT);
 
   fields.newDimension()
     .setId('income_correction_type')
@@ -348,7 +289,7 @@ function getFields() {
     .setType(types.NUMBER);
 
   // ==========================================
-  // GRUPO 10: CAMPOS ESPECÍFICOS DE OUTCOME (9 campos)
+  // DIMENSÕES - PARTE 9: OUTCOME - CAMPOS ESPECÍFICOS
   // ==========================================
 
   fields.newDimension()
@@ -381,7 +322,77 @@ function getFields() {
     .setName('[Outcome] Data de Cadastro')
     .setType(types.YEAR_MONTH_DAY_HOUR);
 
-  // Métricas de arrays JSONB de Outcome
+  // ==========================================
+  // MÉTRICAS - PARTE 1: VALORES FINANCEIROS PRINCIPAIS
+  // ==========================================
+
+  fields.newMetric()
+    .setId('original_amount')
+    .setName('Valor Original')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM);
+
+  fields.newMetric()
+    .setId('discount_amount')
+    .setName('Valor do Desconto')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM);
+
+  fields.newMetric()
+    .setId('tax_amount')
+    .setName('Valor do Imposto')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM);
+
+  fields.newMetric()
+    .setId('balance_amount')
+    .setName('Saldo Devedor')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM);
+
+  fields.newMetric()
+    .setId('corrected_balance_amount')
+    .setName('Saldo Corrigido')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM);
+
+  // ==========================================
+  // MÉTRICAS - PARTE 2: MOVIMENTAÇÕES FINANCEIRAS
+  // ==========================================
+
+  fields.newMetric()
+    .setId('total_movimentacoes')
+    .setName('Total de Movimentações')
+    .setDescription('Quantidade de recebimentos ou pagamentos')
+    .setType(types.NUMBER)
+    .setAggregation(aggregations.SUM);
+
+  fields.newMetric()
+    .setId('valor_total_movimentado')
+    .setName('Valor Total Movimentado')
+    .setDescription('Soma de todos recebimentos ou pagamentos')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM);
+
+  // ==========================================
+  // MÉTRICAS - PARTE 3: INCOME - VALORES ESPECÍFICOS
+  // ==========================================
+
+  fields.newMetric()
+    .setId('income_embedded_interest_amount')
+    .setName('[Income] Juros Embutidos')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM);
+
+  fields.newMetric()
+    .setId('income_interest_rate')
+    .setName('[Income] Taxa de Juros (%)')
+    .setType(types.PERCENT);
+
+  // ==========================================
+  // MÉTRICAS - PARTE 4: OUTCOME - CONTAGENS
+  // ==========================================
+
   fields.newMetric()
     .setId('outcome_total_departamentos')
     .setName('[Outcome] Qtd. Departamentos')
