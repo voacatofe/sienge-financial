@@ -5,6 +5,7 @@ Sistema de sincronização de dados financeiros do Sienge para PostgreSQL com:
 - **Sincronização diária às 2h da manhã**
 - **Interface web CloudBeaver para visualização dos dados**
 - **🚀 Deploy automático via GitHub Actions**
+- **📊 API REST para consumo externo**
 
 ## Estrutura
 
