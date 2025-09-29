@@ -24,33 +24,33 @@ function getFields() {
     .setName('Tipo de Registro')
     .setDescription('Contas a Receber ou Contas a Pagar')
     .setType(types.TEXT)
-    .setGroup('🔑 Identificação');
+    .setGroup('Identificacao');
 
   fields.newDimension()
     .setId('id')
     .setName('ID do Registro')
     .setDescription('Identificador único composto')
     .setType(types.TEXT)
-    .setGroup('🔑 Identificação');
+    .setGroup('Identificacao');
 
   fields.newDimension()
     .setId('sync_date')
     .setName('Data de Sincronização')
     .setDescription('Quando o registro foi sincronizado')
     .setType(types.YEAR_MONTH_DAY_HOUR)
-    .setGroup('🔑 Identificação');
+    .setGroup('Identificacao');
 
   fields.newDimension()
     .setId('installment_id')
     .setName('ID da Parcela')
     .setType(types.NUMBER)
-    .setGroup('🔑 Identificação');
+    .setGroup('Identificacao');
 
   fields.newDimension()
     .setId('bill_id')
     .setName('ID da Conta')
     .setType(types.NUMBER)
-    .setGroup('🔑 Identificação');
+    .setGroup('Identificacao');
 
   // ==========================================
   // DIMENSÕES - GRUPO: DATAS
@@ -60,32 +60,32 @@ function getFields() {
     .setId('due_date')
     .setName('Data de Vencimento')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('📅 Datas');
+    .setGroup('Datas');
 
   fields.newDimension()
     .setId('issue_date')
     .setName('Data de Emissão')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('📅 Datas');
+    .setGroup('Datas');
 
   fields.newDimension()
     .setId('bill_date')
     .setName('Data da Conta')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('📅 Datas');
+    .setGroup('Datas');
 
   fields.newDimension()
     .setId('installment_base_date')
     .setName('Data Base da Parcela')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('📅 Datas');
+    .setGroup('Datas');
 
   fields.newDimension()
     .setId('data_ultima_movimentacao')
     .setName('Data da Última Movimentação')
     .setDescription('Data do último recebimento ou pagamento')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('📅 Datas');
+    .setGroup('Datas');
 
   // ==========================================
   // DIMENSÕES - GRUPO: EMPRESA
@@ -95,13 +95,13 @@ function getFields() {
     .setId('company_id')
     .setName('ID da Empresa')
     .setType(types.NUMBER)
-    .setGroup('🏢 Empresa');
+    .setGroup('Empresa');
 
   fields.newDimension()
     .setId('company_name')
     .setName('Empresa')
     .setType(types.TEXT)
-    .setGroup('🏢 Empresa');
+    .setGroup('Empresa');
 
   fields.newDimension()
     .setId('business_area_id')
@@ -184,21 +184,21 @@ function getFields() {
     .setName('Tipo de Contraparte')
     .setDescription('Cliente (Income) ou Fornecedor (Outcome)')
     .setType(types.TEXT)
-    .setGroup('👥 Contraparte');
+    .setGroup('Contraparte');
 
   fields.newDimension()
     .setId('contraparte_id')
     .setName('ID da Contraparte')
     .setDescription('ID do Cliente ou Fornecedor')
     .setType(types.NUMBER)
-    .setGroup('👥 Contraparte');
+    .setGroup('Contraparte');
 
   fields.newDimension()
     .setId('contraparte_nome')
     .setName('Nome da Contraparte')
     .setDescription('Nome do Cliente ou Fornecedor')
     .setType(types.TEXT)
-    .setGroup('👥 Contraparte');
+    .setGroup('Contraparte');
 
   // ==========================================
   // DIMENSÕES - GRUPO: DOCUMENTO
@@ -208,32 +208,32 @@ function getFields() {
     .setId('document_identification_id')
     .setName('ID do Tipo de Documento')
     .setType(types.TEXT)
-    .setGroup('📄 Documento');
+    .setGroup('Documento');
 
   fields.newDimension()
     .setId('document_identification_name')
     .setName('Tipo de Documento')
     .setType(types.TEXT)
-    .setGroup('📄 Documento');
+    .setGroup('Documento');
 
   fields.newDimension()
     .setId('document_number')
     .setName('Número do Documento')
     .setType(types.TEXT)
-    .setGroup('📄 Documento');
+    .setGroup('Documento');
 
   fields.newDimension()
     .setId('document_forecast')
     .setName('Documento de Previsão')
     .setDescription('S/N')
     .setType(types.TEXT)
-    .setGroup('📄 Documento');
+    .setGroup('Documento');
 
   fields.newDimension()
     .setId('origin_id')
     .setName('ID da Origem')
     .setType(types.TEXT)
-    .setGroup('📄 Documento');
+    .setGroup('Documento');
 
   // ==========================================
   // DIMENSÕES - GRUPO: INDEXAÇÃO
@@ -243,14 +243,14 @@ function getFields() {
     .setId('indexer_id')
     .setName('ID do Indexador')
     .setType(types.NUMBER)
-    .setGroup('📊 Indexação');
+    .setGroup('Indexacao');
 
   fields.newDimension()
     .setId('indexer_name')
     .setName('Indexador')
     .setDescription('INCC-M, IGPM, etc')
     .setType(types.TEXT)
-    .setGroup('📊 Indexação');
+    .setGroup('Indexacao');
 
   // ==========================================
   // DIMENSÕES - GRUPO: STATUS
@@ -261,7 +261,7 @@ function getFields() {
     .setName('Situação de Pagamento')
     .setDescription('Pago / Parcial / Pendente')
     .setType(types.TEXT)
-    .setGroup('⚡ Status');
+    .setGroup('Status');
 
   // ==========================================
   // DIMENSÕES - GRUPO: [INCOME] CONTAS A RECEBER
@@ -269,70 +269,70 @@ function getFields() {
 
   fields.newDimension()
     .setId('income_periodicity_type')
-    .setName('[Income] Periodicidade')
+    .setName('Periodicidade')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_interest_type')
-    .setName('[Income] Tipo de Juros')
+    .setName('Tipo de Juros')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_correction_type')
-    .setName('[Income] Tipo de Correção')
+    .setName('Tipo de Correção')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_interest_base_date')
-    .setName('[Income] Data Base dos Juros')
+    .setName('Data Base dos Juros')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_defaulter_situation')
-    .setName('[Income] Situação de Inadimplência')
+    .setName('Situação de Inadimplência')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_sub_judicie')
-    .setName('[Income] Sub-Júdice')
+    .setName('Sub-Júdice')
     .setDescription('S/N')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_main_unit')
-    .setName('[Income] Unidade Principal')
+    .setName('Unidade Principal')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_installment_number')
-    .setName('[Income] Número da Parcela')
+    .setName('Número da Parcela')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_payment_term_id')
-    .setName('[Income] ID Condição de Pagamento')
+    .setName('ID Condição de Pagamento')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_payment_term_description')
-    .setName('[Income] Condição de Pagamento')
+    .setName('Condição de Pagamento')
     .setType(types.TEXT)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   fields.newDimension()
     .setId('income_bearer_id')
-    .setName('[Income] ID do Portador')
+    .setName('ID do Portador')
     .setType(types.NUMBER)
-    .setGroup('📈 Contas a Receber');
+    .setGroup('Contas a Receber');
 
   // ==========================================
   // DIMENSÕES - GRUPO: [OUTCOME] CONTAS A PAGAR
@@ -340,39 +340,39 @@ function getFields() {
 
   fields.newDimension()
     .setId('outcome_forecast_document')
-    .setName('[Outcome] Documento de Previsão')
+    .setName('Documento de Previsão')
     .setType(types.TEXT)
-    .setGroup('📉 Contas a Pagar');
+    .setGroup('Contas a Pagar');
 
   fields.newDimension()
     .setId('outcome_consistency_status')
-    .setName('[Outcome] Status de Consistência')
+    .setName('Status de Consistência')
     .setType(types.TEXT)
-    .setGroup('📉 Contas a Pagar');
+    .setGroup('Contas a Pagar');
 
   fields.newDimension()
     .setId('outcome_authorization_status')
-    .setName('[Outcome] Status de Autorização')
+    .setName('Status de Autorização')
     .setType(types.TEXT)
-    .setGroup('📉 Contas a Pagar');
+    .setGroup('Contas a Pagar');
 
   fields.newDimension()
     .setId('outcome_registered_user_id')
-    .setName('[Outcome] ID Usuário de Cadastro')
+    .setName('ID Usuário de Cadastro')
     .setType(types.TEXT)
-    .setGroup('📉 Contas a Pagar');
+    .setGroup('Contas a Pagar');
 
   fields.newDimension()
     .setId('outcome_registered_by')
-    .setName('[Outcome] Cadastrado Por')
+    .setName('Cadastrado Por')
     .setType(types.TEXT)
-    .setGroup('📉 Contas a Pagar');
+    .setGroup('Contas a Pagar');
 
   fields.newDimension()
     .setId('outcome_registered_date')
-    .setName('[Outcome] Data de Cadastro')
+    .setName('Data de Cadastro')
     .setType(types.YEAR_MONTH_DAY_HOUR)
-    .setGroup('📉 Contas a Pagar');
+    .setGroup('Contas a Pagar');
 
   // ==========================================
   // MÉTRICAS - GRUPO: VALORES FINANCEIROS
@@ -383,35 +383,35 @@ function getFields() {
     .setName('Valor Original')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
-    .setGroup('💰 Valores Financeiros');
+    .setGroup('Valores Financeiros');
 
   fields.newMetric()
     .setId('discount_amount')
     .setName('Valor do Desconto')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
-    .setGroup('💰 Valores Financeiros');
+    .setGroup('Valores Financeiros');
 
   fields.newMetric()
     .setId('tax_amount')
     .setName('Valor do Imposto')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
-    .setGroup('💰 Valores Financeiros');
+    .setGroup('Valores Financeiros');
 
   fields.newMetric()
     .setId('balance_amount')
     .setName('Saldo Devedor')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
-    .setGroup('💰 Valores Financeiros');
+    .setGroup('Valores Financeiros');
 
   fields.newMetric()
     .setId('corrected_balance_amount')
     .setName('Saldo Corrigido')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
-    .setGroup('💰 Valores Financeiros');
+    .setGroup('Valores Financeiros');
 
   // ==========================================
   // MÉTRICAS - GRUPO: MOVIMENTAÇÕES
@@ -423,7 +423,7 @@ function getFields() {
     .setDescription('Quantidade de recebimentos ou pagamentos')
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
-    .setGroup('🔄 Movimentações');
+    .setGroup('Movimentacoes');
 
   fields.newMetric()
     .setId('valor_total_movimentado')
@@ -431,7 +431,7 @@ function getFields() {
     .setDescription('Soma de todos recebimentos ou pagamentos')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
-    .setGroup('🔄 Movimentações');
+    .setGroup('Movimentacoes');
 
   // ==========================================
   // MÉTRICAS - GRUPO: [INCOME] VALORES A RECEBER
@@ -439,16 +439,16 @@ function getFields() {
 
   fields.newMetric()
     .setId('income_embedded_interest_amount')
-    .setName('[Income] Juros Embutidos')
+    .setName('Juros Embutidos')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
-    .setGroup('💵 Valores a Receber');
+    .setGroup('Valores a Receber');
 
   fields.newMetric()
     .setId('income_interest_rate')
-    .setName('[Income] Taxa de Juros (%)')
+    .setName('Taxa de Juros (%)')
     .setType(types.PERCENT)
-    .setGroup('💵 Valores a Receber');
+    .setGroup('Valores a Receber');
 
   // ==========================================
   // MÉTRICAS - GRUPO: [OUTCOME] VALORES A PAGAR
@@ -456,27 +456,27 @@ function getFields() {
 
   fields.newMetric()
     .setId('outcome_total_departamentos')
-    .setName('[Outcome] Qtd. Departamentos')
+    .setName('Qtd. Departamentos')
     .setDescription('Total de departamentos vinculados')
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
-    .setGroup('💸 Valores a Pagar');
+    .setGroup('Valores a Pagar');
 
   fields.newMetric()
     .setId('outcome_total_edificacoes')
-    .setName('[Outcome] Qtd. Edificações')
+    .setName('Qtd. Edificações')
     .setDescription('Total de edificações vinculadas')
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
-    .setGroup('💸 Valores a Pagar');
+    .setGroup('Valores a Pagar');
 
   fields.newMetric()
     .setId('outcome_total_autorizacoes')
-    .setName('[Outcome] Qtd. Autorizações')
+    .setName('Qtd. Autorizações')
     .setDescription('Total de autorizações')
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
-    .setGroup('💸 Valores a Pagar');
+    .setGroup('Valores a Pagar');
 
   return fields;
 }
