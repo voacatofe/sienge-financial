@@ -97,8 +97,11 @@ services:
       CB_SERVER_NAME: Sienge Financial DB
     networks:
       - sienge_network
-    profiles:
-      - debug  # Only start with --profile debug
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   sienge_network:
