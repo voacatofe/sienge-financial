@@ -52,11 +52,21 @@ function getConfig(request) {
     .setHelpText(USER_CONFIG_OPTIONS.INCLUDE_OUTCOME.helpText)
     .setAllowOverride(true);
 
-  config.newCheckbox()
-    .setId(USER_CONFIG_OPTIONS.SHOW_IDS.id)
-    .setName(USER_CONFIG_OPTIONS.SHOW_IDS.name)
-    .setHelpText(USER_CONFIG_OPTIONS.SHOW_IDS.helpText)
-    .setAllowOverride(true);
+  // Verificar se SHOW_IDS existe antes de usar
+  if (USER_CONFIG_OPTIONS.SHOW_IDS) {
+    config.newCheckbox()
+      .setId(USER_CONFIG_OPTIONS.SHOW_IDS.id)
+      .setName(USER_CONFIG_OPTIONS.SHOW_IDS.name)
+      .setHelpText(USER_CONFIG_OPTIONS.SHOW_IDS.helpText)
+      .setAllowOverride(true);
+  } else {
+    // Fallback caso Config.gs não esteja carregado
+    config.newCheckbox()
+      .setId('showIds')
+      .setName('Mostrar campos de ID')
+      .setHelpText('Exibir campos técnicos de ID no relatório')
+      .setAllowOverride(true);
+  }
 
   config.setDateRangeRequired(false);
 
@@ -74,7 +84,8 @@ function getSchema(request) {
   validateConfiguration(request.configParams);
 
   // Passar configParams para getFields
-  var showIds = request.configParams && request.configParams[USER_CONFIG_OPTIONS.SHOW_IDS.id] === 'true';
+  var showIdsKey = (USER_CONFIG_OPTIONS.SHOW_IDS && USER_CONFIG_OPTIONS.SHOW_IDS.id) || 'showIds';
+  var showIds = request.configParams && request.configParams[showIdsKey] === 'true';
 
   LOGGING.info('Schema built successfully. Show IDs: ' + showIds);
 
@@ -128,7 +139,8 @@ function getData(request) {
     var requestedFieldIds = request.fields.map(function(f) { return f.name; });
 
     // Verificar configuração de IDs
-    var showIds = request.configParams && request.configParams[USER_CONFIG_OPTIONS.SHOW_IDS.id] === 'true';
+    var showIdsKey = (USER_CONFIG_OPTIONS.SHOW_IDS && USER_CONFIG_OPTIONS.SHOW_IDS.id) || 'showIds';
+    var showIds = request.configParams && request.configParams[showIdsKey] === 'true';
 
     // Construir schema correto usando forIds()
     var requestedSchema = getFields(showIds).forIds(requestedFieldIds).build();
