@@ -150,6 +150,9 @@ function fetchAllPaginated(baseUrl, filters) {
  * Constrói URL com parâmetros de query (filtros + paginação)
  * OTIMIZAÇÃO: Query pushdown - envia filtros para API ao invés de filtrar client-side
  *
+ * IMPORTANTE: Processa dimension filters ANTES de dateRange para evitar duplicação
+ * de parâmetros start_date/end_date quando usuário filtra por due_date específico
+ *
  * @param {string} baseUrl - Endpoint base
  * @param {Object} filters - Filtros do Looker (dateRange, dimensionsFilters)
  * @param {number} limit - Limite de registros por página
@@ -164,20 +167,15 @@ function buildQueryUrl(baseUrl, filters, limit, offset) {
     return baseUrl + '?' + params.join('&');
   }
 
-  // Date Range Filter (mais comum e impactante)
-  if (filters.dateRange) {
-    if (filters.dateRange.startDate) {
-      // Converter de yyyyMMdd para yyyy-MM-dd
-      var startDate = formatDateForApi(filters.dateRange.startDate);
-      params.push('start_date=' + startDate);
-    }
-    if (filters.dateRange.endDate) {
-      var endDate = formatDateForApi(filters.dateRange.endDate);
-      params.push('end_date=' + endDate);
-    }
+  // ETAPA 1: Verificar se existe filtro específico de due_date
+  var hasDueDateFilter = false;
+  if (filters.dimensionsFilters && filters.dimensionsFilters.length > 0) {
+    hasDueDateFilter = filters.dimensionsFilters.some(function(filter) {
+      return filter.fieldName === 'due_date' && filter.values && filter.values.length > 0;
+    });
   }
 
-  // Dimension Filters (company, client, project, etc.)
+  // ETAPA 2: Processar Dimension Filters PRIMEIRO (PRIORIDADE)
   if (filters.dimensionsFilters && filters.dimensionsFilters.length > 0) {
     filters.dimensionsFilters.forEach(function(filter) {
       var fieldName = filter.fieldName;
@@ -208,10 +206,35 @@ function buildQueryUrl(baseUrl, filters, limit, offset) {
       else if (fieldName === 'business_area_id' && values && values.length > 0) {
         params.push('business_area_id=' + values[0]);
       }
+      else if (fieldName === 'due_date' && values && values.length > 0) {
+        // Converter data do Looker (yyyyMMdd) para API (yyyy-MM-dd)
+        var dueDate = formatDateForApi(values[0]);
+        // Usar start_date e end_date iguais para filtro exato de data de vencimento
+        params.push('start_date=' + dueDate);
+        params.push('end_date=' + dueDate);
+        LOGGING.info('Applied specific due_date filter: ' + dueDate);
+      }
     });
   }
 
-  // Metric Filters (min/max amount)
+  // ETAPA 3: Processar Date Range Filter SOMENTE se não há filtro de due_date específico
+  // Evita duplicação de parâmetros start_date/end_date
+  if (!hasDueDateFilter && filters.dateRange) {
+    if (filters.dateRange.startDate) {
+      // Converter de yyyyMMdd para yyyy-MM-dd
+      var startDate = formatDateForApi(filters.dateRange.startDate);
+      params.push('start_date=' + startDate);
+    }
+    if (filters.dateRange.endDate) {
+      var endDate = formatDateForApi(filters.dateRange.endDate);
+      params.push('end_date=' + endDate);
+    }
+    LOGGING.info('Applied dateRange filter: ' + filters.dateRange.startDate + ' to ' + filters.dateRange.endDate);
+  } else if (hasDueDateFilter) {
+    LOGGING.info('Skipping dateRange filter because specific due_date filter exists');
+  }
+
+  // ETAPA 4: Processar Metric Filters (min/max amount)
   if (filters.metricFilters && filters.metricFilters.length > 0) {
     filters.metricFilters.forEach(function(filter) {
       if (filter.fieldName === 'original_amount') {
