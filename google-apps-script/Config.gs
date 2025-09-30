@@ -20,7 +20,9 @@ var CONFIG = {
   MAX_RECORDS_PER_REQUEST: 1000,
 
   // Cache Configuration
-  CACHE_DURATION_SECONDS: 300, // 5 minutos
+  // ✅ PERFORMANCE: Aumentado de 5min para 30min
+  // Dados financeiros não mudam frequentemente, cache mais longo reduz chamadas de API
+  CACHE_DURATION_SECONDS: 1800, // 30 minutos (era 300 = 5min)
 
   // Record Types
   RECORD_TYPE_INCOME: 'income',

@@ -73,9 +73,10 @@ function formatDate(dateString) {
       return '';
     }
 
-    var year = date.getFullYear();
-    var month = ('0' + (date.getMonth() + 1)).slice(-2);
-    var day = ('0' + date.getDate()).slice(-2);
+    // ✅ FIX: Usa métodos UTC para garantir data correta independente do timezone
+    var year = date.getUTCFullYear();
+    var month = ('0' + (date.getUTCMonth() + 1)).slice(-2);
+    var day = ('0' + date.getUTCDate()).slice(-2);
 
     return year + month + day;
   } catch (e) {
@@ -98,10 +99,11 @@ function formatDateTime(dateString) {
       return '';
     }
 
-    var year = date.getFullYear();
-    var month = ('0' + (date.getMonth() + 1)).slice(-2);
-    var day = ('0' + date.getDate()).slice(-2);
-    var hour = ('0' + date.getHours()).slice(-2);
+    // ✅ FIX: Usa métodos UTC para garantir datetime correto independente do timezone
+    var year = date.getUTCFullYear();
+    var month = ('0' + (date.getUTCMonth() + 1)).slice(-2);
+    var day = ('0' + date.getUTCDate()).slice(-2);
+    var hour = ('0' + date.getUTCHours()).slice(-2);
 
     return year + month + day + hour;
   } catch (e) {
@@ -202,7 +204,9 @@ function cachedFetch(url) {
       'muteHttpExceptions': true,
       'contentType': 'application/json',
       'headers': {
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        // ✅ PERFORMANCE: Ativa compressão GZIP (reduz tráfego em 60-80%)
+        'Accept-Encoding': 'gzip, deflate'
       }
     };
 
@@ -380,4 +384,155 @@ function truncateString(str, maxLength) {
 function cleanString(str) {
   if (!str) return '';
   return str.trim().replace(/\s+/g, ' ');
+}
+
+// ==========================================
+// Testes de Validação
+// ==========================================
+
+/**
+ * Testa formatação de datas após correção de timezone
+ * Execute esta função para validar que as datas estão corretas
+ */
+function testDateFormatting() {
+  Logger.log('=== TESTE DE FORMATAÇÃO DE DATAS (Pós-Fix UTC) ===');
+  Logger.log('Timezone do script: ' + Session.getScriptTimeZone());
+  Logger.log('');
+
+  var testCases = [
+    {
+      input: '2025-09-24T00:00:00Z',
+      expected: '20250924',
+      description: 'Data normal - 24/09/2025'
+    },
+    {
+      input: '2025-01-15T00:00:00Z',
+      expected: '20250115',
+      description: 'Meia-noite UTC - 15/01/2025'
+    },
+    {
+      input: '2025-02-01T00:00:00Z',
+      expected: '20250201',
+      description: 'Virada de mês - 01/02/2025'
+    },
+    {
+      input: '2025-08-31T00:00:00Z',
+      expected: '20250831',
+      description: 'Último dia do mês - 31/08/2025'
+    },
+    {
+      input: '2026-01-01T00:00:00Z',
+      expected: '20260101',
+      description: 'Virada de ano - 01/01/2026'
+    },
+    {
+      input: '2025-12-31T23:59:59Z',
+      expected: '20251231',
+      description: 'Último segundo do ano - 31/12/2025'
+    },
+    {
+      input: '2024-02-29T00:00:00Z',
+      expected: '20240229',
+      description: 'Ano bissexto - 29/02/2024'
+    },
+    {
+      input: null,
+      expected: '',
+      description: 'Null input (deve retornar vazio)'
+    },
+    {
+      input: '',
+      expected: '',
+      description: 'Empty string (deve retornar vazio)'
+    },
+    {
+      input: 'invalid-date',
+      expected: '',
+      description: 'Data inválida (deve retornar vazio)'
+    }
+  ];
+
+  var passed = 0;
+  var failed = 0;
+
+  testCases.forEach(function(test) {
+    var result = formatDate(test.input);
+    var status = result === test.expected ? '✅ PASS' : '❌ FAIL';
+
+    if (result === test.expected) {
+      passed++;
+    } else {
+      failed++;
+    }
+
+    Logger.log(status + ': ' + test.description);
+    Logger.log('  Input: ' + test.input);
+    Logger.log('  Expected: ' + test.expected);
+    Logger.log('  Got: ' + result);
+
+    if (result !== test.expected) {
+      Logger.log('  ⚠️ DIFERENÇA DETECTADA!');
+    }
+    Logger.log('');
+  });
+
+  Logger.log('=== RESULTADO DOS TESTES ===');
+  Logger.log('Passou: ' + passed + '/' + testCases.length);
+  Logger.log('Falhou: ' + failed + '/' + testCases.length);
+  Logger.log('');
+
+  if (failed === 0) {
+    Logger.log('✅ TODOS OS TESTES PASSARAM! Bug de timezone corrigido.');
+  } else {
+    Logger.log('❌ ALGUNS TESTES FALHARAM! Verifique a implementação.');
+  }
+
+  return failed === 0;
+}
+
+/**
+ * Testa formatação de datetimes após correção de timezone
+ */
+function testDateTimeFormatting() {
+  Logger.log('=== TESTE DE FORMATAÇÃO DE DATETIMES (Pós-Fix UTC) ===');
+
+  var testCases = [
+    {
+      input: '2025-09-24T14:30:00Z',
+      expected: '2025092414',
+      description: 'DateTime com hora - 24/09/2025 14:30'
+    },
+    {
+      input: '2025-01-01T00:00:00Z',
+      expected: '2025010100',
+      description: 'Meia-noite ano novo - 01/01/2025 00:00'
+    },
+    {
+      input: '2025-12-31T23:00:00Z',
+      expected: '2025123123',
+      description: 'Último dia ano - 31/12/2025 23:00'
+    }
+  ];
+
+  var passed = 0;
+  var failed = 0;
+
+  testCases.forEach(function(test) {
+    var result = formatDateTime(test.input);
+    var status = result === test.expected ? '✅ PASS' : '❌ FAIL';
+
+    if (result === test.expected) {
+      passed++;
+    } else {
+      failed++;
+    }
+
+    Logger.log(status + ': ' + test.description);
+    Logger.log('  Expected: ' + test.expected + ' | Got: ' + result);
+  });
+
+  Logger.log('');
+  Logger.log('DateTime Tests: ' + passed + '/' + testCases.length + ' passed');
+
+  return failed === 0;
 }
