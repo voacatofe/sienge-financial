@@ -75,10 +75,10 @@ class SiengeSync:
         Returns True if both income and outcome tables are empty
         """
         try:
-            self.cursor.execute("SELECT COUNT(*) FROM income")
+            self.cursor.execute("SELECT COUNT(*) FROM income_data")
             income_count = self.cursor.fetchone()[0]
 
-            self.cursor.execute("SELECT COUNT(*) FROM outcome")
+            self.cursor.execute("SELECT COUNT(*) FROM outcome_data")
             outcome_count = self.cursor.fetchone()[0]
 
             is_first = (income_count == 0 and outcome_count == 0)
