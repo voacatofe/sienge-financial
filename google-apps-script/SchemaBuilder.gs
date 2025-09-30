@@ -176,29 +176,40 @@ function getFields() {
     .setGroup('🏢 Empresa');
 
   // ==========================================
-  // DIMENSÕES - GRUPO: CONTRAPARTE
+  // DIMENSÕES - GRUPO: CLIENTE
   // ==========================================
 
   fields.newDimension()
-    .setId('contraparte_tipo')
-    .setName('Tipo de Contraparte')
-    .setDescription('Cliente (Income) ou Fornecedor (Outcome)')
-    .setType(types.TEXT)
-    .setGroup('Contraparte');
-
-  fields.newDimension()
-    .setId('contraparte_id')
-    .setName('ID da Contraparte')
-    .setDescription('ID do Cliente ou Fornecedor')
+    .setId('cliente_id')
+    .setName('ID do Cliente')
+    .setDescription('ID do Cliente (apenas Contas a Receber)')
     .setType(types.NUMBER)
-    .setGroup('Contraparte');
+    .setGroup('Cliente');
 
   fields.newDimension()
-    .setId('contraparte_nome')
-    .setName('Nome da Contraparte')
-    .setDescription('Nome do Cliente ou Fornecedor')
+    .setId('cliente_nome')
+    .setName('Nome do Cliente')
+    .setDescription('Nome do Cliente (apenas Contas a Receber)')
     .setType(types.TEXT)
-    .setGroup('Contraparte');
+    .setGroup('Cliente');
+
+  // ==========================================
+  // DIMENSÕES - GRUPO: CREDOR
+  // ==========================================
+
+  fields.newDimension()
+    .setId('credor_id')
+    .setName('ID do Credor')
+    .setDescription('ID do Credor (apenas Contas a Pagar)')
+    .setType(types.NUMBER)
+    .setGroup('Credor');
+
+  fields.newDimension()
+    .setId('credor_nome')
+    .setName('Nome do Credor')
+    .setDescription('Nome do Credor (apenas Contas a Pagar)')
+    .setType(types.TEXT)
+    .setGroup('Credor');
 
   // ==========================================
   // DIMENSÕES - GRUPO: DOCUMENTO

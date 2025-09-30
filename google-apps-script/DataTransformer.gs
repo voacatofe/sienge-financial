@@ -89,31 +89,31 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
   }
 
   // ==========================================
-  // GRUPO 3: CONTRAPARTE UNIFICADA
+  // GRUPO 3: CLIENTE (Income)
   // ==========================================
 
-  if (fieldName === 'contraparte_tipo') {
-    return isIncome ? CONFIG.COUNTERPARTY_CLIENT : CONFIG.COUNTERPARTY_SUPPLIER;
+  if (fieldName === 'cliente_id') {
+    return isIncome ? toNumber(record.client_id, 0) : null;
   }
 
-  if (fieldName === 'contraparte_id') {
-    if (isIncome) {
-      return toNumber(record.client_id, 0);
-    } else {
-      return toNumber(record.creditor_id, 0);
-    }
-  }
-
-  if (fieldName === 'contraparte_nome') {
-    if (isIncome) {
-      return safeValue(record.client_name, '');
-    } else {
-      return safeValue(record.creditor_name, '');
-    }
+  if (fieldName === 'cliente_nome') {
+    return isIncome ? safeValue(record.client_name, '') : '';
   }
 
   // ==========================================
-  // GRUPO 4: DOCUMENTO (Campos comuns)
+  // GRUPO 4: CREDOR (Outcome)
+  // ==========================================
+
+  if (fieldName === 'credor_id') {
+    return !isIncome ? toNumber(record.creditor_id, 0) : null;
+  }
+
+  if (fieldName === 'credor_nome') {
+    return !isIncome ? safeValue(record.creditor_name, '') : '';
+  }
+
+  // ==========================================
+  // GRUPO 5: DOCUMENTO (Campos comuns)
   // ==========================================
 
   var documentFields = [
@@ -129,7 +129,7 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
   }
 
   // ==========================================
-  // GRUPO 5: VALORES FINANCEIROS (Campos comuns)
+  // GRUPO 6: VALORES FINANCEIROS (Campos comuns)
   // ==========================================
 
   var financeFields = [
@@ -145,7 +145,7 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
   }
 
   // ==========================================
-  // GRUPO 6: DATAS (Campos comuns)
+  // GRUPO 7: DATAS (Campos comuns)
   // ==========================================
 
   var dateFields = [
@@ -160,7 +160,7 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
   }
 
   // ==========================================
-  // GRUPO 7: INDEXAÇÃO (Campos comuns)
+  // GRUPO 8: INDEXAÇÃO (Campos comuns)
   // ==========================================
 
   if (fieldName === 'indexer_id') {
@@ -172,7 +172,7 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
   }
 
   // ==========================================
-  // GRUPO 8: MOVIMENTAÇÕES (Calculados)
+  // GRUPO 9: MOVIMENTAÇÕES (Calculados)
   // ==========================================
 
   if (fieldName === 'total_movimentacoes') {
@@ -203,7 +203,7 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
   }
 
   // ==========================================
-  // GRUPO 9: CAMPOS ESPECÍFICOS DE INCOME
+  // GRUPO 10: CAMPOS ESPECÍFICOS DE INCOME
   // ==========================================
 
   // Periodicidade
@@ -272,7 +272,7 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
   }
 
   // ==========================================
-  // GRUPO 10: CAMPOS ESPECÍFICOS DE OUTCOME
+  // GRUPO 11: CAMPOS ESPECÍFICOS DE OUTCOME
   // ==========================================
 
   // Documento Previsão
