@@ -69,6 +69,163 @@ class SiengeSync:
             self.conn.close()
         logger.info("Database connection closed")
 
+    def is_first_sync(self) -> bool:
+        """
+        Check if this is the first sync (database is empty)
+        Returns True if both income and outcome tables are empty
+        """
+        try:
+            self.cursor.execute("SELECT COUNT(*) FROM income")
+            income_count = self.cursor.fetchone()[0]
+
+            self.cursor.execute("SELECT COUNT(*) FROM outcome")
+            outcome_count = self.cursor.fetchone()[0]
+
+            is_first = (income_count == 0 and outcome_count == 0)
+            logger.info(f"First sync check: income={income_count}, outcome={outcome_count}, is_first={is_first}")
+
+            return is_first
+        except Exception as e:
+            logger.error(f"Error checking if first sync: {e}")
+            return True  # Assume first sync on error
+
+    def get_last_successful_sync_date(self, data_type: str) -> Optional[datetime]:
+        """
+        Get the end_date of the last successful sync for a given data type
+
+        Args:
+            data_type: 'income' or 'outcome'
+
+        Returns:
+            datetime object of last successful sync, or None if not found
+        """
+        try:
+            self.cursor.execute("""
+                SELECT MAX(end_date)
+                FROM sync_control
+                WHERE data_type = %s
+                  AND status = 'success'
+                  AND sync_type = 'daily'
+            """, (data_type,))
+
+            result = self.cursor.fetchone()
+            if result and result[0]:
+                return datetime.combine(result[0], datetime.min.time())
+            return None
+        except Exception as e:
+            logger.warning(f"Could not get last sync date for {data_type}: {e}")
+            return None
+
+    def get_sync_dates(self) -> tuple[str, str, str]:
+        """
+        Automatically determine sync dates based on database state
+
+        Returns:
+            tuple: (sync_type, start_date, end_date) as strings
+        """
+        if self.is_first_sync():
+            # BACKFILL: First sync detected
+            years = int(os.getenv('BACKFILL_YEARS', '5'))
+            start_date = datetime.now() - timedelta(days=years * 365)
+            end_date = datetime.now()
+            sync_type = 'historical'
+
+            logger.info(f"🎯 BACKFILL MODE: Syncing last {years} years")
+            logger.info(f"   Period: {start_date.date()} to {end_date.date()}")
+        else:
+            # INCREMENTAL: Subsequent syncs
+            lookback_days = int(os.getenv('INCREMENTAL_LOOKBACK_DAYS', '7'))
+
+            # Try to get last sync date, fallback to lookback window
+            last_sync_income = self.get_last_successful_sync_date('income')
+            last_sync_outcome = self.get_last_successful_sync_date('outcome')
+
+            # Use the earliest of the two (or fallback if neither exists)
+            if last_sync_income or last_sync_outcome:
+                last_sync = min(
+                    filter(None, [last_sync_income, last_sync_outcome])
+                )
+                start_date = last_sync - timedelta(days=lookback_days)
+            else:
+                # Fallback: use lookback window from today
+                start_date = datetime.now() - timedelta(days=lookback_days)
+
+            end_date = datetime.now()
+            sync_type = 'daily'
+
+            logger.info(f"🔄 INCREMENTAL MODE: Syncing with {lookback_days}-day overlap")
+            logger.info(f"   Period: {start_date.date()} to {end_date.date()}")
+
+        # Format as strings for API calls
+        start_date_str = start_date.strftime('%Y-%m-%d')
+        end_date_str = end_date.strftime('%Y-%m-%d')
+
+        return sync_type, start_date_str, end_date_str
+
+    def record_sync_start(self, sync_type: str, data_type: str, start_date: str, end_date: str) -> int:
+        """
+        Record the start of a sync operation in sync_control table
+
+        Returns:
+            int: The ID of the created sync_control record
+        """
+        try:
+            self.cursor.execute("""
+                INSERT INTO sync_control (
+                    sync_type, data_type, start_date, end_date, status
+                ) VALUES (%s, %s, %s, %s, 'running')
+                RETURNING id
+            """, (sync_type, data_type, start_date, end_date))
+
+            sync_id = self.cursor.fetchone()[0]
+            self.conn.commit()
+
+            logger.info(f"Recorded sync start: {sync_type}/{data_type} (id={sync_id})")
+            return sync_id
+        except Exception as e:
+            logger.error(f"Failed to record sync start: {e}")
+            return None
+
+    def record_sync_complete(self, sync_id: int, records_synced: int,
+                            records_inserted: int, records_updated: int,
+                            execution_time: int):
+        """
+        Update sync_control record with completion status
+        """
+        try:
+            self.cursor.execute("""
+                UPDATE sync_control
+                SET status = 'success',
+                    records_synced = %s,
+                    records_inserted = %s,
+                    records_updated = %s,
+                    execution_time_seconds = %s
+                WHERE id = %s
+            """, (records_synced, records_inserted, records_updated, execution_time, sync_id))
+
+            self.conn.commit()
+            logger.info(f"Recorded sync completion (id={sync_id}): {records_synced} records")
+        except Exception as e:
+            logger.error(f"Failed to record sync completion: {e}")
+
+    def record_sync_failure(self, sync_id: int, error_message: str, execution_time: int):
+        """
+        Update sync_control record with failure status
+        """
+        try:
+            self.cursor.execute("""
+                UPDATE sync_control
+                SET status = 'failed',
+                    error_message = %s,
+                    execution_time_seconds = %s
+                WHERE id = %s
+            """, (error_message, execution_time, sync_id))
+
+            self.conn.commit()
+            logger.error(f"Recorded sync failure (id={sync_id}): {error_message}")
+        except Exception as e:
+            logger.error(f"Failed to record sync failure: {e}")
+
     def fetch_income_data(self, start_date: str, end_date: str, selection_type: str = 'I') -> List[Dict]:
         """Fetch income data from Sienge API"""
         url = f"{self.base_url}/income"
@@ -298,88 +455,136 @@ class SiengeSync:
             self.conn.rollback()
             raise
 
-    def sync_income(self, start_date: str, end_date: str):
+    def sync_income(self, sync_type: str, start_date: str, end_date: str):
         """Sync income data for the specified date range"""
         logger.info(f"Starting income sync from {start_date} to {end_date}")
 
-        # Fetch data from API
-        records = self.fetch_income_data(start_date, end_date)
+        start_time = datetime.now()
 
-        if not records:
-            logger.info("No income records to sync")
-            return
+        # Record sync start
+        sync_id = self.record_sync_start(sync_type, 'income', start_date, end_date)
 
-        # Process and insert each record
-        success_count = 0
-        error_count = 0
+        try:
+            # Fetch data from API
+            records = self.fetch_income_data(start_date, end_date)
 
-        for record in records:
-            try:
-                processed_data = self.process_income_record(record)
-                self.upsert_income_record(processed_data)
-                success_count += 1
-            except Exception as e:
-                logger.error(f"Failed to process income record: {e}")
-                error_count += 1
+            if not records:
+                logger.info("No income records to sync")
+                execution_time = int((datetime.now() - start_time).total_seconds())
+                self.record_sync_complete(sync_id, 0, 0, 0, execution_time)
+                return
 
-        # Commit the transaction
-        self.conn.commit()
+            # Process and insert each record
+            success_count = 0
+            error_count = 0
 
-        logger.info(f"Income sync completed: {success_count} success, {error_count} errors")
+            # Note: We can't track insert vs update at this level without checking before upsert
+            # For now, we'll just track total synced
+            for record in records:
+                try:
+                    processed_data = self.process_income_record(record)
+                    self.upsert_income_record(processed_data)
+                    success_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to process income record: {e}")
+                    error_count += 1
 
-    def sync_outcome(self, start_date: str, end_date: str):
+            # Commit the transaction
+            self.conn.commit()
+
+            execution_time = int((datetime.now() - start_time).total_seconds())
+            self.record_sync_complete(sync_id, success_count, 0, 0, execution_time)
+
+            logger.info(f"Income sync completed: {success_count} success, {error_count} errors")
+
+        except Exception as e:
+            execution_time = int((datetime.now() - start_time).total_seconds())
+            self.record_sync_failure(sync_id, str(e), execution_time)
+            raise
+
+    def sync_outcome(self, sync_type: str, start_date: str, end_date: str):
         """Sync outcome data for the specified date range"""
         logger.info(f"Starting outcome sync from {start_date} to {end_date}")
 
-        # Fetch data from API
-        records = self.fetch_outcome_data(start_date, end_date)
+        start_time = datetime.now()
 
-        if not records:
-            logger.info("No outcome records to sync")
-            return
+        # Record sync start
+        sync_id = self.record_sync_start(sync_type, 'outcome', start_date, end_date)
 
-        # Process and insert each record
-        success_count = 0
-        error_count = 0
+        try:
+            # Fetch data from API
+            records = self.fetch_outcome_data(start_date, end_date)
 
-        for record in records:
-            try:
-                processed_data = self.process_outcome_record(record)
-                self.upsert_outcome_record(processed_data)
-                success_count += 1
-            except Exception as e:
-                logger.error(f"Failed to process outcome record: {e}")
-                error_count += 1
+            if not records:
+                logger.info("No outcome records to sync")
+                execution_time = int((datetime.now() - start_time).total_seconds())
+                self.record_sync_complete(sync_id, 0, 0, 0, execution_time)
+                return
 
-        # Commit the transaction
-        self.conn.commit()
+            # Process and insert each record
+            success_count = 0
+            error_count = 0
 
-        logger.info(f"Outcome sync completed: {success_count} success, {error_count} errors")
+            for record in records:
+                try:
+                    processed_data = self.process_outcome_record(record)
+                    self.upsert_outcome_record(processed_data)
+                    success_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to process outcome record: {e}")
+                    error_count += 1
+
+            # Commit the transaction
+            self.conn.commit()
+
+            execution_time = int((datetime.now() - start_time).total_seconds())
+            self.record_sync_complete(sync_id, success_count, 0, 0, execution_time)
+
+            logger.info(f"Outcome sync completed: {success_count} success, {error_count} errors")
+
+        except Exception as e:
+            execution_time = int((datetime.now() - start_time).total_seconds())
+            self.record_sync_failure(sync_id, str(e), execution_time)
+            raise
 
     def run(self, start_date: Optional[str] = None, end_date: Optional[str] = None):
-        """Run the complete sync process"""
-        # Default to current year if no dates provided
-        if not start_date:
-            start_date = datetime(datetime.now().year, 1, 1).strftime('%Y-%m-%d')
-        if not end_date:
-            end_date = datetime.now().strftime('%Y-%m-%d')
+        """
+        Run the complete sync process with automatic date detection
 
-        logger.info(f"Starting Sienge sync for period {start_date} to {end_date}")
+        Args:
+            start_date: Optional manual override for start date (YYYY-MM-DD)
+            end_date: Optional manual override for end date (YYYY-MM-DD)
 
+        If dates are not provided, automatically detects:
+        - First sync (empty database) → Backfill mode (last 5 years)
+        - Subsequent syncs → Incremental mode (last 7 days with overlap)
+        """
         try:
             # Connect to database
             self.connect_db()
 
+            # Determine sync dates automatically or use provided dates
+            if start_date and end_date:
+                # Manual override
+                sync_type = 'manual'
+                logger.info(f"📅 MANUAL MODE: Using provided dates")
+                logger.info(f"   Period: {start_date} to {end_date}")
+            else:
+                # Automatic detection
+                sync_type, start_date, end_date = self.get_sync_dates()
+
+            logger.info(f"Starting Sienge sync for period {start_date} to {end_date}")
+
             # Sync income data
-            self.sync_income(start_date, end_date)
+            self.sync_income(sync_type, start_date, end_date)
 
             # Sync outcome data
-            self.sync_outcome(start_date, end_date)
+            self.sync_outcome(sync_type, start_date, end_date)
 
-            logger.info("Sienge sync completed successfully")
+            logger.info("✅ Sienge sync completed successfully")
 
         except Exception as e:
-            logger.error(f"Sync failed: {e}")
+            logger.error(f"❌ Sync failed: {e}")
             raise
         finally:
             self.close_db()

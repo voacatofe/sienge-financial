@@ -12,6 +12,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./migrations/001_create_tables.sql:/docker-entrypoint-initdb.d/02-create_tables.sql:ro
+      - ./migrations/002_add_sync_date.sql:/docker-entrypoint-initdb.d/03-add_sync_date.sql:ro
+      - ./migrations/003_add_sync_control.sql:/docker-entrypoint-initdb.d/04-add_sync_control.sql:ro
     networks:
       - sienge_network
     healthcheck:
