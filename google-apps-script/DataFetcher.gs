@@ -11,8 +11,11 @@
 /**
  * Busca todos os dados unificados (Income + Outcome)
  * URL da API é FIXA no CONFIG
+ *
+ * @param {Object} configParams - Parâmetros de configuração
+ * @param {Object} requestFilters - Filtros da query (dateRange, dimensionsFilters)
  */
-function fetchAllData(configParams) {
+function fetchAllData(configParams, requestFilters) {
   var apiUrl = CONFIG.API_URL;
   var includeIncome = configParams.includeIncome !== 'false';
   var includeOutcome = configParams.includeOutcome !== 'false';
@@ -21,12 +24,17 @@ function fetchAllData(configParams) {
   LOGGING.info('Include Income: ' + includeIncome);
   LOGGING.info('Include Outcome: ' + includeOutcome);
 
+  // NOVO: Log dos filtros aplicados
+  if (requestFilters) {
+    LOGGING.info('Applying filters: ' + JSON.stringify(requestFilters));
+  }
+
   var allRecords = [];
 
   // Buscar Income
   if (includeIncome) {
     try {
-      var incomeRecords = fetchIncomeData(apiUrl);
+      var incomeRecords = fetchIncomeData(apiUrl, requestFilters);
       LOGGING.info('Fetched ' + incomeRecords.length + ' income records');
 
       // Adiciona tipo ao registro
@@ -45,7 +53,7 @@ function fetchAllData(configParams) {
   // Buscar Outcome
   if (includeOutcome) {
     try {
-      var outcomeRecords = fetchOutcomeData(apiUrl);
+      var outcomeRecords = fetchOutcomeData(apiUrl, requestFilters);
       LOGGING.info('Fetched ' + outcomeRecords.length + ' outcome records');
 
       // Adiciona tipo ao registro
@@ -70,24 +78,30 @@ function fetchAllData(configParams) {
 
 /**
  * Busca dados de Income com paginação
+ * @param {string} apiUrl - Base URL da API
+ * @param {Object} filters - Filtros da query
  */
-function fetchIncomeData(apiUrl) {
+function fetchIncomeData(apiUrl, filters) {
   var endpoint = apiUrl + CONFIG.INCOME_ENDPOINT;
-  return fetchAllPaginated(endpoint);
+  return fetchAllPaginated(endpoint, filters);
 }
 
 /**
  * Busca dados de Outcome com paginação
+ * @param {string} apiUrl - Base URL da API
+ * @param {Object} filters - Filtros da query
  */
-function fetchOutcomeData(apiUrl) {
+function fetchOutcomeData(apiUrl, filters) {
   var endpoint = apiUrl + CONFIG.OUTCOME_ENDPOINT;
-  return fetchAllPaginated(endpoint);
+  return fetchAllPaginated(endpoint, filters);
 }
 
 /**
  * Busca todos os dados com paginação automática
+ * @param {string} baseUrl - Endpoint da API
+ * @param {Object} filters - Filtros da query (opcional)
  */
-function fetchAllPaginated(baseUrl) {
+function fetchAllPaginated(baseUrl, filters) {
   var allData = [];
   var offset = 0;
   var limit = CONFIG.MAX_RECORDS_PER_REQUEST;
@@ -98,7 +112,8 @@ function fetchAllPaginated(baseUrl) {
   while (hasMore && iteration < maxIterations) {
     iteration++;
 
-    var url = baseUrl + '?limit=' + limit + '&offset=' + offset;
+    // NOVO: Construir URL com filtros
+    var url = buildQueryUrl(baseUrl, filters, limit, offset);
 
     try {
       var response = cachedFetch(url);
@@ -129,6 +144,106 @@ function fetchAllPaginated(baseUrl) {
   }
 
   return allData;
+}
+
+/**
+ * Constrói URL com parâmetros de query (filtros + paginação)
+ * OTIMIZAÇÃO: Query pushdown - envia filtros para API ao invés de filtrar client-side
+ *
+ * @param {string} baseUrl - Endpoint base
+ * @param {Object} filters - Filtros do Looker (dateRange, dimensionsFilters)
+ * @param {number} limit - Limite de registros por página
+ * @param {number} offset - Offset para paginação
+ * @returns {string} URL completa com query parameters
+ */
+function buildQueryUrl(baseUrl, filters, limit, offset) {
+  var params = ['limit=' + limit, 'offset=' + offset];
+
+  // Se não tem filtros, retornar URL básica
+  if (!filters) {
+    return baseUrl + '?' + params.join('&');
+  }
+
+  // Date Range Filter (mais comum e impactante)
+  if (filters.dateRange) {
+    if (filters.dateRange.startDate) {
+      // Converter de yyyyMMdd para yyyy-MM-dd
+      var startDate = formatDateForApi(filters.dateRange.startDate);
+      params.push('start_date=' + startDate);
+    }
+    if (filters.dateRange.endDate) {
+      var endDate = formatDateForApi(filters.dateRange.endDate);
+      params.push('end_date=' + endDate);
+    }
+  }
+
+  // Dimension Filters (company, client, project, etc.)
+  if (filters.dimensionsFilters && filters.dimensionsFilters.length > 0) {
+    filters.dimensionsFilters.forEach(function(filter) {
+      var fieldName = filter.fieldName;
+      var values = filter.values;
+
+      // Mapear campos do Looker para parâmetros da API
+      if (fieldName === 'company_id' && values && values.length > 0) {
+        params.push('company_id=' + values[0]);
+      }
+      else if (fieldName === 'company_name' && values && values.length > 0) {
+        params.push('company_name=' + encodeURIComponent(values[0]));
+      }
+      else if (fieldName === 'cliente_id' && values && values.length > 0) {
+        params.push('client_id=' + values[0]);
+      }
+      else if (fieldName === 'cliente_nome' && values && values.length > 0) {
+        params.push('client_name=' + encodeURIComponent(values[0]));
+      }
+      else if (fieldName === 'credor_id' && values && values.length > 0) {
+        params.push('creditor_id=' + values[0]);
+      }
+      else if (fieldName === 'credor_nome' && values && values.length > 0) {
+        params.push('creditor_name=' + encodeURIComponent(values[0]));
+      }
+      else if (fieldName === 'project_id' && values && values.length > 0) {
+        params.push('project_id=' + values[0]);
+      }
+      else if (fieldName === 'business_area_id' && values && values.length > 0) {
+        params.push('business_area_id=' + values[0]);
+      }
+    });
+  }
+
+  // Metric Filters (min/max amount)
+  if (filters.metricFilters && filters.metricFilters.length > 0) {
+    filters.metricFilters.forEach(function(filter) {
+      if (filter.fieldName === 'original_amount') {
+        if (filter.min !== undefined) {
+          params.push('min_amount=' + filter.min);
+        }
+        if (filter.max !== undefined) {
+          params.push('max_amount=' + filter.max);
+        }
+      }
+    });
+  }
+
+  return baseUrl + '?' + params.join('&');
+}
+
+/**
+ * Converte data de yyyyMMdd (Looker) para yyyy-MM-dd (API)
+ * @param {string} lookerDate - Data no formato yyyyMMdd
+ * @returns {string} Data no formato yyyy-MM-dd
+ */
+function formatDateForApi(lookerDate) {
+  if (!lookerDate || lookerDate.length !== 8) {
+    return lookerDate;
+  }
+
+  // yyyyMMdd -> yyyy-MM-dd
+  var year = lookerDate.substring(0, 4);
+  var month = lookerDate.substring(4, 6);
+  var day = lookerDate.substring(6, 8);
+
+  return year + '-' + month + '-' + day;
 }
 
 /**

@@ -105,6 +105,25 @@ function getData(request) {
 
   try {
     // ==========================================
+    // ETAPA 0: Default Date Filter (Performance)
+    // ==========================================
+
+    // Se usuário não especificou date range, aplicar padrão de 3 meses
+    // OTIMIZAÇÃO: Evita buscar dados históricos desnecessários
+    if (!request.dateRange || !request.dateRange.startDate) {
+      var today = new Date();
+      var threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+      request.dateRange = {
+        startDate: Utilities.formatDate(threeMonthsAgo, 'GMT', 'yyyyMMdd'),
+        endDate: Utilities.formatDate(today, 'GMT', 'yyyyMMdd')
+      };
+
+      LOGGING.info('Applied default date filter: last 3 months (' + request.dateRange.startDate + ' to ' + request.dateRange.endDate + ')');
+    }
+
+    // ==========================================
     // ETAPA 1: Validação
     // ==========================================
 
@@ -117,7 +136,14 @@ function getData(request) {
 
     LOGGING.info('Fetching data from API...');
 
-    var allRecords = fetchAllData(request.configParams);
+    // NOVO: Extrair filtros do request para query pushdown
+    var requestFilters = {
+      dateRange: request.dateRange,
+      dimensionsFilters: request.dimensionsFilters || [],
+      metricFilters: request.metricFilters || []
+    };
+
+    var allRecords = fetchAllData(request.configParams, requestFilters);
 
     if (allRecords.length === 0) {
       LOGGING.warn('No records returned from API');
