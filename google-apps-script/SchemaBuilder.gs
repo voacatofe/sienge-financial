@@ -1,22 +1,145 @@
 /**
  * SchemaBuilder.gs
- * Construtor de Schema Unificado para Sienge Financial Connector
+ * Construtor de Schema com 7 Grupos Semânticos
  *
- * Define todos os 79 campos unificados (Income + Outcome)
- * Com grupos visuais usando .setGroup() para organização no Looker Studio
+ * NOVA ESTRUTURA:
+ * - Grupo 1: IDs (16 campos) - OPCIONAL via config
+ * - Grupo 2: Básicos (7 campos)
+ * - Grupo 3: Empresa (7 campos)
+ * - Grupo 4: Partes (4 campos)
+ * - Grupo 5: Financeiro (11 campos) - dimensões + métricas
+ * - Grupo 6: Contas a Receber (13 campos) - dimensões + métricas
+ * - Grupo 7: Contas a Pagar (9 campos) - dimensões + métricas
+ *
+ * Total: 80 campos (53 dimensões + 12 métricas) com Cliente/Credor separados
  */
 
 /**
  * Retorna objeto fields sem build() - usado por getSchema e getData
  * Permite uso de forIds() para filtrar campos solicitados
+ *
+ * @param {boolean} showIds - Se deve incluir campos de ID (padrão: false)
  */
-function getFields() {
+function getFields(showIds) {
   var fields = cc.getFields();
   var types = FIELD_TYPES;
   var aggregations = AGGREGATION_TYPES;
 
+  // Default: não mostrar IDs
+  if (showIds === undefined) {
+    showIds = false;
+  }
+
   // ==========================================
-  // DIMENSÕES - GRUPO: IDENTIFICAÇÃO
+  // GRUPO 1: IDs (16 campos) - OPCIONAL
+  // ==========================================
+
+  if (showIds) {
+    // Identificação
+    fields.newDimension()
+      .setId('id')
+      .setName('ID do Registro')
+      .setType(types.TEXT)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('installment_id')
+      .setName('ID da Parcela')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('bill_id')
+      .setName('ID da Conta')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    // Empresa
+    fields.newDimension()
+      .setId('company_id')
+      .setName('ID da Empresa')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('business_area_id')
+      .setName('ID da Área de Negócio')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('project_id')
+      .setName('ID do Projeto')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('group_company_id')
+      .setName('ID do Grupo Empresarial')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('holding_id')
+      .setName('ID da Holding')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('subsidiary_id')
+      .setName('ID da Filial')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('business_type_id')
+      .setName('ID do Tipo de Negócio')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    // Partes
+    fields.newDimension()
+      .setId('cliente_id')
+      .setName('ID do Cliente')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('credor_id')
+      .setName('ID do Credor')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    // Documento
+    fields.newDimension()
+      .setId('document_identification_id')
+      .setName('ID do Tipo de Documento')
+      .setType(types.TEXT)
+      .setGroup('IDs');
+
+    fields.newDimension()
+      .setId('origin_id')
+      .setName('ID da Origem')
+      .setType(types.TEXT)
+      .setGroup('IDs');
+
+    // Indexador
+    fields.newDimension()
+      .setId('indexer_id')
+      .setName('ID do Indexador')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+
+    // Income
+    fields.newDimension()
+      .setId('income_bearer_id')
+      .setName('ID do Portador')
+      .setType(types.NUMBER)
+      .setGroup('IDs');
+  }
+
+  // ==========================================
+  // GRUPO 2: BÁSICOS (7 campos)
   // ==========================================
 
   fields.newDimension()
@@ -24,78 +147,48 @@ function getFields() {
     .setName('Tipo de Registro')
     .setDescription('Contas a Receber ou Contas a Pagar')
     .setType(types.TEXT)
-    .setGroup('Identificacao');
-
-  fields.newDimension()
-    .setId('id')
-    .setName('ID do Registro')
-    .setDescription('Identificador único composto')
-    .setType(types.TEXT)
-    .setGroup('Identificacao');
+    .setGroup('Basicos');
 
   fields.newDimension()
     .setId('sync_date')
     .setName('Data de Sincronização')
-    .setDescription('Quando o registro foi sincronizado')
     .setType(types.YEAR_MONTH_DAY_HOUR)
-    .setGroup('Identificacao');
-
-  fields.newDimension()
-    .setId('installment_id')
-    .setName('ID da Parcela')
-    .setType(types.NUMBER)
-    .setGroup('Identificacao');
-
-  fields.newDimension()
-    .setId('bill_id')
-    .setName('ID da Conta')
-    .setType(types.NUMBER)
-    .setGroup('Identificacao');
-
-  // ==========================================
-  // DIMENSÕES - GRUPO: DATAS
-  // ==========================================
+    .setGroup('Basicos');
 
   fields.newDimension()
     .setId('due_date')
     .setName('Data de Vencimento')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('Datas');
+    .setGroup('Basicos');
 
   fields.newDimension()
     .setId('issue_date')
     .setName('Data de Emissão')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('Datas');
+    .setGroup('Basicos');
 
   fields.newDimension()
     .setId('bill_date')
     .setName('Data da Conta')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('Datas');
+    .setGroup('Basicos');
 
   fields.newDimension()
     .setId('installment_base_date')
     .setName('Data Base da Parcela')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('Datas');
+    .setGroup('Basicos');
 
   fields.newDimension()
     .setId('data_ultima_movimentacao')
     .setName('Data da Última Movimentação')
     .setDescription('Data do último recebimento ou pagamento')
     .setType(types.YEAR_MONTH_DAY)
-    .setGroup('Datas');
+    .setGroup('Basicos');
 
   // ==========================================
-  // DIMENSÕES - GRUPO: EMPRESA
+  // GRUPO 3: EMPRESA (7 campos)
   // ==========================================
-
-  fields.newDimension()
-    .setId('company_id')
-    .setName('ID da Empresa')
-    .setType(types.NUMBER)
-    .setGroup('Empresa');
 
   fields.newDimension()
     .setId('company_name')
@@ -104,180 +197,153 @@ function getFields() {
     .setGroup('Empresa');
 
   fields.newDimension()
-    .setId('business_area_id')
-    .setName('ID da Área de Negócio')
-    .setType(types.NUMBER)
-    .setGroup('🏢 Empresa');
-
-  fields.newDimension()
     .setId('business_area_name')
     .setName('Área de Negócio')
     .setType(types.TEXT)
-    .setGroup('🏢 Empresa');
-
-  fields.newDimension()
-    .setId('project_id')
-    .setName('ID do Projeto')
-    .setType(types.NUMBER)
-    .setGroup('🏢 Empresa');
+    .setGroup('Empresa');
 
   fields.newDimension()
     .setId('project_name')
     .setName('Projeto')
     .setType(types.TEXT)
-    .setGroup('🏢 Empresa');
-
-  fields.newDimension()
-    .setId('group_company_id')
-    .setName('ID do Grupo Empresarial')
-    .setType(types.NUMBER)
-    .setGroup('🏢 Empresa');
+    .setGroup('Empresa');
 
   fields.newDimension()
     .setId('group_company_name')
     .setName('Grupo Empresarial')
     .setType(types.TEXT)
-    .setGroup('🏢 Empresa');
-
-  fields.newDimension()
-    .setId('holding_id')
-    .setName('ID da Holding')
-    .setType(types.NUMBER)
-    .setGroup('🏢 Empresa');
+    .setGroup('Empresa');
 
   fields.newDimension()
     .setId('holding_name')
     .setName('Holding')
     .setType(types.TEXT)
-    .setGroup('🏢 Empresa');
-
-  fields.newDimension()
-    .setId('subsidiary_id')
-    .setName('ID da Filial')
-    .setType(types.NUMBER)
-    .setGroup('🏢 Empresa');
+    .setGroup('Empresa');
 
   fields.newDimension()
     .setId('subsidiary_name')
     .setName('Filial')
     .setType(types.TEXT)
-    .setGroup('🏢 Empresa');
-
-  fields.newDimension()
-    .setId('business_type_id')
-    .setName('ID do Tipo de Negócio')
-    .setType(types.NUMBER)
-    .setGroup('🏢 Empresa');
+    .setGroup('Empresa');
 
   fields.newDimension()
     .setId('business_type_name')
     .setName('Tipo de Negócio')
     .setType(types.TEXT)
-    .setGroup('🏢 Empresa');
+    .setGroup('Empresa');
 
   // ==========================================
-  // DIMENSÕES - GRUPO: CLIENTE
+  // GRUPO 4: PARTES (4 campos)
   // ==========================================
-
-  fields.newDimension()
-    .setId('cliente_id')
-    .setName('ID do Cliente')
-    .setDescription('ID do Cliente (apenas Contas a Receber)')
-    .setType(types.NUMBER)
-    .setGroup('Cliente');
 
   fields.newDimension()
     .setId('cliente_nome')
     .setName('Nome do Cliente')
     .setDescription('Nome do Cliente (apenas Contas a Receber)')
     .setType(types.TEXT)
-    .setGroup('Cliente');
-
-  // ==========================================
-  // DIMENSÕES - GRUPO: CREDOR
-  // ==========================================
-
-  fields.newDimension()
-    .setId('credor_id')
-    .setName('ID do Credor')
-    .setDescription('ID do Credor (apenas Contas a Pagar)')
-    .setType(types.NUMBER)
-    .setGroup('Credor');
+    .setGroup('Partes');
 
   fields.newDimension()
     .setId('credor_nome')
     .setName('Nome do Credor')
     .setDescription('Nome do Credor (apenas Contas a Pagar)')
     .setType(types.TEXT)
-    .setGroup('Credor');
-
-  // ==========================================
-  // DIMENSÕES - GRUPO: DOCUMENTO
-  // ==========================================
-
-  fields.newDimension()
-    .setId('document_identification_id')
-    .setName('ID do Tipo de Documento')
-    .setType(types.TEXT)
-    .setGroup('Documento');
+    .setGroup('Partes');
 
   fields.newDimension()
     .setId('document_identification_name')
     .setName('Tipo de Documento')
     .setType(types.TEXT)
-    .setGroup('Documento');
+    .setGroup('Partes');
 
   fields.newDimension()
     .setId('document_number')
     .setName('Número do Documento')
     .setType(types.TEXT)
-    .setGroup('Documento');
+    .setGroup('Partes');
+
+  // ==========================================
+  // GRUPO 5: FINANCEIRO (11 campos) - MISTO
+  // ==========================================
+
+  // Dimensões
+  fields.newDimension()
+    .setId('situacao_pagamento')
+    .setName('Situação de Pagamento')
+    .setDescription('Pago / Parcial / Pendente')
+    .setType(types.TEXT)
+    .setGroup('Financeiro');
 
   fields.newDimension()
     .setId('document_forecast')
     .setName('Documento de Previsão')
-    .setDescription('S/N')
     .setType(types.TEXT)
-    .setGroup('Documento');
-
-  fields.newDimension()
-    .setId('origin_id')
-    .setName('ID da Origem')
-    .setType(types.TEXT)
-    .setGroup('Documento');
-
-  // ==========================================
-  // DIMENSÕES - GRUPO: INDEXAÇÃO
-  // ==========================================
-
-  fields.newDimension()
-    .setId('indexer_id')
-    .setName('ID do Indexador')
-    .setType(types.NUMBER)
-    .setGroup('Indexacao');
+    .setGroup('Financeiro');
 
   fields.newDimension()
     .setId('indexer_name')
     .setName('Indexador')
     .setDescription('INCC-M, IGPM, etc')
     .setType(types.TEXT)
-    .setGroup('Indexacao');
+    .setGroup('Financeiro');
+
+  // Métricas
+  fields.newMetric()
+    .setId('original_amount')
+    .setName('Valor Original')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM)
+    .setGroup('Financeiro');
+
+  fields.newMetric()
+    .setId('discount_amount')
+    .setName('Valor do Desconto')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM)
+    .setGroup('Financeiro');
+
+  fields.newMetric()
+    .setId('tax_amount')
+    .setName('Valor do Imposto')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM)
+    .setGroup('Financeiro');
+
+  fields.newMetric()
+    .setId('balance_amount')
+    .setName('Saldo Devedor')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM)
+    .setGroup('Financeiro');
+
+  fields.newMetric()
+    .setId('corrected_balance_amount')
+    .setName('Saldo Corrigido')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM)
+    .setGroup('Financeiro');
+
+  fields.newMetric()
+    .setId('total_movimentacoes')
+    .setName('Total de Movimentações')
+    .setDescription('Quantidade de recebimentos ou pagamentos')
+    .setType(types.NUMBER)
+    .setAggregation(aggregations.SUM)
+    .setGroup('Financeiro');
+
+  fields.newMetric()
+    .setId('valor_total_movimentado')
+    .setName('Valor Total Movimentado')
+    .setDescription('Soma de todos recebimentos ou pagamentos')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM)
+    .setGroup('Financeiro');
 
   // ==========================================
-  // DIMENSÕES - GRUPO: STATUS
+  // GRUPO 6: CONTAS A RECEBER (13 campos) - MISTO
   // ==========================================
 
-  fields.newDimension()
-    .setId('situacao_pagamento')
-    .setName('Situação de Pagamento')
-    .setDescription('Pago / Parcial / Pendente')
-    .setType(types.TEXT)
-    .setGroup('Status');
-
-  // ==========================================
-  // DIMENSÕES - GRUPO: [INCOME] CONTAS A RECEBER
-  // ==========================================
-
+  // Dimensões Income
   fields.newDimension()
     .setId('income_periodicity_type')
     .setName('Periodicidade')
@@ -311,7 +377,6 @@ function getFields() {
   fields.newDimension()
     .setId('income_sub_judicie')
     .setName('Sub-Júdice')
-    .setDescription('S/N')
     .setType(types.TEXT)
     .setGroup('Contas a Receber');
 
@@ -339,16 +404,25 @@ function getFields() {
     .setType(types.TEXT)
     .setGroup('Contas a Receber');
 
-  fields.newDimension()
-    .setId('income_bearer_id')
-    .setName('ID do Portador')
-    .setType(types.NUMBER)
+  // Métricas Income
+  fields.newMetric()
+    .setId('income_embedded_interest_amount')
+    .setName('Juros Embutidos')
+    .setType(types.CURRENCY_BRL)
+    .setAggregation(aggregations.SUM)
+    .setGroup('Contas a Receber');
+
+  fields.newMetric()
+    .setId('income_interest_rate')
+    .setName('Taxa de Juros (%)')
+    .setType(types.PERCENT)
     .setGroup('Contas a Receber');
 
   // ==========================================
-  // DIMENSÕES - GRUPO: [OUTCOME] CONTAS A PAGAR
+  // GRUPO 7: CONTAS A PAGAR (9 campos) - MISTO
   // ==========================================
 
+  // Dimensões Outcome
   fields.newDimension()
     .setId('outcome_forecast_document')
     .setName('Documento de Previsão')
@@ -385,93 +459,14 @@ function getFields() {
     .setType(types.YEAR_MONTH_DAY_HOUR)
     .setGroup('Contas a Pagar');
 
-  // ==========================================
-  // MÉTRICAS - GRUPO: VALORES FINANCEIROS
-  // ==========================================
-
-  fields.newMetric()
-    .setId('original_amount')
-    .setName('Valor Original')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM)
-    .setGroup('Valores Financeiros');
-
-  fields.newMetric()
-    .setId('discount_amount')
-    .setName('Valor do Desconto')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM)
-    .setGroup('Valores Financeiros');
-
-  fields.newMetric()
-    .setId('tax_amount')
-    .setName('Valor do Imposto')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM)
-    .setGroup('Valores Financeiros');
-
-  fields.newMetric()
-    .setId('balance_amount')
-    .setName('Saldo Devedor')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM)
-    .setGroup('Valores Financeiros');
-
-  fields.newMetric()
-    .setId('corrected_balance_amount')
-    .setName('Saldo Corrigido')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM)
-    .setGroup('Valores Financeiros');
-
-  // ==========================================
-  // MÉTRICAS - GRUPO: MOVIMENTAÇÕES
-  // ==========================================
-
-  fields.newMetric()
-    .setId('total_movimentacoes')
-    .setName('Total de Movimentações')
-    .setDescription('Quantidade de recebimentos ou pagamentos')
-    .setType(types.NUMBER)
-    .setAggregation(aggregations.SUM)
-    .setGroup('Movimentacoes');
-
-  fields.newMetric()
-    .setId('valor_total_movimentado')
-    .setName('Valor Total Movimentado')
-    .setDescription('Soma de todos recebimentos ou pagamentos')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM)
-    .setGroup('Movimentacoes');
-
-  // ==========================================
-  // MÉTRICAS - GRUPO: [INCOME] VALORES A RECEBER
-  // ==========================================
-
-  fields.newMetric()
-    .setId('income_embedded_interest_amount')
-    .setName('Juros Embutidos')
-    .setType(types.CURRENCY_BRL)
-    .setAggregation(aggregations.SUM)
-    .setGroup('Valores a Receber');
-
-  fields.newMetric()
-    .setId('income_interest_rate')
-    .setName('Taxa de Juros (%)')
-    .setType(types.PERCENT)
-    .setGroup('Valores a Receber');
-
-  // ==========================================
-  // MÉTRICAS - GRUPO: [OUTCOME] VALORES A PAGAR
-  // ==========================================
-
+  // Métricas Outcome
   fields.newMetric()
     .setId('outcome_total_departamentos')
     .setName('Qtd. Departamentos')
     .setDescription('Total de departamentos vinculados')
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
-    .setGroup('Valores a Pagar');
+    .setGroup('Contas a Pagar');
 
   fields.newMetric()
     .setId('outcome_total_edificacoes')
@@ -479,7 +474,7 @@ function getFields() {
     .setDescription('Total de edificações vinculadas')
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
-    .setGroup('Valores a Pagar');
+    .setGroup('Contas a Pagar');
 
   fields.newMetric()
     .setId('outcome_total_autorizacoes')
@@ -487,7 +482,7 @@ function getFields() {
     .setDescription('Total de autorizações')
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
-    .setGroup('Valores a Pagar');
+    .setGroup('Contas a Pagar');
 
   return fields;
 }

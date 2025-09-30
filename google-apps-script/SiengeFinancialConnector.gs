@@ -52,6 +52,12 @@ function getConfig(request) {
     .setHelpText(USER_CONFIG_OPTIONS.INCLUDE_OUTCOME.helpText)
     .setAllowOverride(true);
 
+  config.newCheckbox()
+    .setId(USER_CONFIG_OPTIONS.SHOW_IDS.id)
+    .setName(USER_CONFIG_OPTIONS.SHOW_IDS.name)
+    .setHelpText(USER_CONFIG_OPTIONS.SHOW_IDS.helpText)
+    .setAllowOverride(true);
+
   config.setDateRangeRequired(false);
 
   return config.build();
@@ -59,7 +65,7 @@ function getConfig(request) {
 
 /**
  * Retorna o schema de campos do conector
- * Schema completo com todos os 79 campos (sempre)
+ * Schema com campos baseado em configuração (IDs opcionais)
  */
 function getSchema(request) {
   LOGGING.info('Building schema for Looker Studio');
@@ -67,9 +73,12 @@ function getSchema(request) {
   // Validar configuração
   validateConfiguration(request.configParams);
 
-  LOGGING.info('Schema built successfully');
+  // Passar configParams para getFields
+  var showIds = request.configParams && request.configParams[USER_CONFIG_OPTIONS.SHOW_IDS.id] === 'true';
 
-  return { schema: getFields().build() };
+  LOGGING.info('Schema built successfully. Show IDs: ' + showIds);
+
+  return { schema: getFields(showIds).build() };
 }
 
 /**
@@ -118,8 +127,11 @@ function getData(request) {
     // Obter IDs dos campos solicitados
     var requestedFieldIds = request.fields.map(function(f) { return f.name; });
 
+    // Verificar configuração de IDs
+    var showIds = request.configParams && request.configParams[USER_CONFIG_OPTIONS.SHOW_IDS.id] === 'true';
+
     // Construir schema correto usando forIds()
-    var requestedSchema = getFields().forIds(requestedFieldIds).build();
+    var requestedSchema = getFields(showIds).forIds(requestedFieldIds).build();
 
     // Sempre calcular métricas (simplificado)
     var rows = transformRecords(

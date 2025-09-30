@@ -90,6 +90,13 @@ var USER_CONFIG_OPTIONS = {
     name: 'Incluir Contas a Pagar',
     helpText: 'Buscar dados de contas a pagar',
     defaultValue: true
+  },
+
+  SHOW_IDS: {
+    id: 'showIds',
+    name: 'Mostrar campos de ID',
+    helpText: 'Exibir campos técnicos de ID no relatório (IDs de empresa, projeto, cliente, etc)',
+    defaultValue: false
   }
 };
 
