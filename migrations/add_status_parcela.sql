@@ -5,31 +5,61 @@
 -- ==========================================
 -- STEP 1: Add status_parcela to income_data
 -- ==========================================
+-- Note: Cannot use CURRENT_DATE in generated column (not immutable)
+-- Instead, we'll create a regular column with a trigger or view approach
 
+-- Option A: Regular column (requires manual updates or trigger)
 ALTER TABLE income_data
-ADD COLUMN status_parcela VARCHAR GENERATED ALWAYS AS (
-    CASE
-        WHEN balance_amount = 0 OR balance_amount IS NULL THEN 'Recebida'
-        WHEN due_date < CURRENT_DATE AND balance_amount > 0 THEN 'Vencida'
-        WHEN balance_amount > 0 THEN 'A Receber'
-        ELSE 'Indefinido'
-    END
-) STORED;
+ADD COLUMN status_parcela VARCHAR;
+
+-- Create function to calculate status
+CREATE OR REPLACE FUNCTION calculate_income_status(balance numeric, due date)
+RETURNS VARCHAR AS $$
+BEGIN
+    IF balance = 0 OR balance IS NULL THEN
+        RETURN 'Recebida';
+    ELSIF due < CURRENT_DATE AND balance > 0 THEN
+        RETURN 'Vencida';
+    ELSIF balance > 0 THEN
+        RETURN 'A Receber';
+    ELSE
+        RETURN 'Indefinido';
+    END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Populate existing records
+UPDATE income_data
+SET status_parcela = calculate_income_status(balance_amount, due_date);
 
 -- ==========================================
 -- STEP 2: Add status_parcela to outcome_data
 -- ==========================================
 
 ALTER TABLE outcome_data
-ADD COLUMN status_parcela VARCHAR GENERATED ALWAYS AS (
-    CASE
-        WHEN balance_amount = 0 OR balance_amount IS NULL THEN 'Paga'
-        WHEN due_date < CURRENT_DATE AND balance_amount > 0 THEN 'Vencida'
-        WHEN authorization_status = 'N' OR authorization_status IS NULL THEN 'Não Autorizada'
-        WHEN authorization_status = 'S' AND balance_amount > 0 THEN 'A Pagar'
-        ELSE 'Indefinido'
-    END
-) STORED;
+ADD COLUMN status_parcela VARCHAR;
+
+-- Create function to calculate status
+CREATE OR REPLACE FUNCTION calculate_outcome_status(balance numeric, due date, auth_status varchar)
+RETURNS VARCHAR AS $$
+BEGIN
+    IF balance = 0 OR balance IS NULL THEN
+        RETURN 'Paga';
+    ELSIF due < CURRENT_DATE AND balance > 0 THEN
+        RETURN 'Vencida';
+    ELSIF auth_status = 'N' OR auth_status IS NULL THEN
+        RETURN 'Não Autorizada';
+    ELSIF auth_status = 'S' AND balance > 0 THEN
+        RETURN 'A Pagar';
+    ELSE
+        RETURN 'Indefinido';
+    END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Populate existing records
+UPDATE outcome_data
+SET status_parcela = calculate_outcome_status(balance_amount, due_date, authorization_status);
 
 -- ==========================================
 -- STEP 3: Verify the migration

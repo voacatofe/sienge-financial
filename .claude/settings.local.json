@@ -17,7 +17,15 @@
       "WebSearch",
       "Bash(iconv:*)",
       "Bash(awk:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT column_name FROM information_schema.columns WHERE table_name = ''income_data'' AND column_name = ''status_parcela'';\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT COUNT(*) as total_income FROM income_data;\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT COUNT(*) as total_outcome FROM outcome_data;\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -f \"c:\\Users\\darla\\OneDrive\\Documentos\\sienge-financial\\migrations\\add_status_parcela.sql\")",
+      "Bash(PGPASSWORD:*)",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ''income_data'' AND column_name = ''status_parcela'';\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT id, installment_id, balance_amount, due_date, status_parcela FROM income_data WHERE status_parcela = ''Vencida'' LIMIT 5;\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT id, installment_id, balance_amount, due_date, authorization_status, status_parcela FROM outcome_data WHERE status_parcela = ''Vencida'' LIMIT 5;\")"
     ],
     "deny": [],
     "ask": []

@@ -294,6 +294,23 @@ class SiengeSync:
             logger.error(f"Failed to fetch outcome data: {e}")
             return []
 
+    def calculate_income_status(self, balance_amount: float, due_date: str) -> str:
+        """Calculate status for income record"""
+        from datetime import datetime
+
+        if not balance_amount or balance_amount == 0:
+            return 'Recebida'
+
+        if due_date:
+            due = datetime.strptime(due_date, '%Y-%m-%d').date() if isinstance(due_date, str) else due_date
+            if due < datetime.now().date() and balance_amount > 0:
+                return 'Vencida'
+
+        if balance_amount > 0:
+            return 'A Receber'
+
+        return 'Indefinido'
+
     def process_income_record(self, record: Dict) -> Dict:
         """Process a single income record for database insertion"""
         # Extract payment term if exists
@@ -355,10 +372,31 @@ class SiengeSync:
             'payment_term_descrition': payment_term.get('descrition') if payment_term else None,  # Typo from API
             'bearer_id': record.get('bearerId'),
             'receipts': json.dumps(record.get('receipts', [])),
-            'receipts_categories': json.dumps(record.get('receiptsCategories', []))
+            'receipts_categories': json.dumps(record.get('receiptsCategories', [])),
+            'status_parcela': self.calculate_income_status(record.get('balanceAmount'), record.get('dueDate'))
         }
 
         return data
+
+    def calculate_outcome_status(self, balance_amount: float, due_date: str, auth_status: str) -> str:
+        """Calculate status for outcome record"""
+        from datetime import datetime
+
+        if not balance_amount or balance_amount == 0:
+            return 'Paga'
+
+        if due_date:
+            due = datetime.strptime(due_date, '%Y-%m-%d').date() if isinstance(due_date, str) else due_date
+            if due < datetime.now().date() and balance_amount > 0:
+                return 'Vencida'
+
+        if not auth_status or auth_status == 'N':
+            return 'Não Autorizada'
+
+        if auth_status == 'S' and balance_amount > 0:
+            return 'A Pagar'
+
+        return 'Indefinido'
 
     def process_outcome_record(self, record: Dict) -> Dict:
         """Process a single outcome record for database insertion"""
@@ -413,7 +451,12 @@ class SiengeSync:
             'payments_categories': json.dumps(record.get('paymentsCategories', [])),
             'departments_costs': json.dumps(record.get('departamentsCosts', [])),
             'buildings_costs': json.dumps(record.get('buildingsCosts', [])),
-            'authorizations': json.dumps(record.get('authorizations', []))
+            'authorizations': json.dumps(record.get('authorizations', [])),
+            'status_parcela': self.calculate_outcome_status(
+                record.get('balanceAmount'),
+                record.get('dueDate'),
+                record.get('authorizationStatus')
+            )
         }
 
         return data
