@@ -157,6 +157,36 @@ CREATE INDEX idx_outcome_payments ON outcome_data USING GIN(payments);
 CREATE INDEX idx_outcome_categories ON outcome_data USING GIN(payments_categories);
 
 -- ==========================================
+-- SYNC CONTROL TABLE
+-- ==========================================
+CREATE TABLE sync_control (
+    id SERIAL PRIMARY KEY,
+    sync_type VARCHAR(20) NOT NULL,         -- 'historical' or 'daily'
+    data_type VARCHAR(20) NOT NULL,         -- 'income' or 'outcome'
+    start_date DATE NOT NULL,               -- Sync period start
+    end_date DATE NOT NULL,                 -- Sync period end
+    records_synced INT DEFAULT 0,           -- Total records processed
+    records_inserted INT DEFAULT 0,         -- New records inserted
+    records_updated INT DEFAULT 0,          -- Existing records updated
+    status VARCHAR(20) NOT NULL,            -- 'success', 'failed', 'running'
+    error_message TEXT,                     -- Error details if failed
+    execution_time_seconds INT,             -- Duration of sync
+    created_at TIMESTAMP DEFAULT NOW()      -- When sync ran
+);
+
+-- Add comments
+COMMENT ON TABLE sync_control IS 'Tracks synchronization history for monitoring and automatic detection';
+COMMENT ON COLUMN sync_control.sync_type IS 'Type: historical (backfill) or daily (incremental)';
+COMMENT ON COLUMN sync_control.records_inserted IS 'Count of new records inserted via UPSERT';
+COMMENT ON COLUMN sync_control.records_updated IS 'Count of existing records updated via UPSERT';
+
+-- Create index for fast lookup of last successful sync
+CREATE INDEX idx_sync_control_lookup ON sync_control(data_type, status, created_at DESC);
+
+-- Create index for monitoring queries
+CREATE INDEX idx_sync_control_monitoring ON sync_control(sync_type, created_at DESC);
+
+-- ==========================================
 -- HELPER VIEWS FOR COMMON QUERIES
 -- ==========================================
 
@@ -190,6 +220,13 @@ WHERE due_date < CURRENT_DATE
   AND balance_amount > 0
 ORDER BY days_overdue DESC;
 
--- Grant permissions (adjust as needed)
+-- ==========================================
+-- PERMISSIONS
+-- ==========================================
+-- Grant permissions to sienge_user
+GRANT SELECT, INSERT, UPDATE ON sync_control TO sienge_user;
+GRANT USAGE, SELECT ON SEQUENCE sync_control_id_seq TO sienge_user;
+
+-- Additional permissions (adjust as needed)
 -- GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sienge_app;
 -- GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO sienge_app;
