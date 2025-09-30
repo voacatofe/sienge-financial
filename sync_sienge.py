@@ -86,7 +86,7 @@ class SiengeSync:
 
             return is_first
         except Exception as e:
-            logger.error(f"Error checking if first sync: {e}")
+            logger.warning(f"Could not check if first sync: {e}")
             return True  # Assume first sync on error
 
     def get_last_successful_sync_date(self, data_type: str) -> Optional[datetime]:
@@ -177,13 +177,18 @@ class SiengeSync:
                 RETURNING id
             """, (sync_type, data_type, start_date, end_date))
 
-            sync_id = self.cursor.fetchone()[0]
-            self.conn.commit()
-
-            logger.info(f"Recorded sync start: {sync_type}/{data_type} (id={sync_id})")
-            return sync_id
+            result = self.cursor.fetchone()
+            if result:
+                sync_id = result[0]
+                self.conn.commit()
+                logger.info(f"Recorded sync start: {sync_type}/{data_type} (id={sync_id})")
+                return sync_id
+            else:
+                logger.error("Failed to record sync start: No ID returned")
+                return None
         except Exception as e:
             logger.error(f"Failed to record sync start: {e}")
+            self.conn.rollback()
             return None
 
     def record_sync_complete(self, sync_id: int, records_synced: int,
