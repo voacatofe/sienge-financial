@@ -182,7 +182,7 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
     return countJsonbArray(movements);
   }
 
-  if (fieldName === 'valor_total_movimentado') {
+  if (fieldName === 'valor_liquido') {
     if (!calculateMetrics) return 0;
 
     var movements = isIncome ? record.receipts : record.payments;

@@ -51,7 +51,7 @@ SchemaBuilder.gs
      │   └─ original_amount, discount_amount, tax_amount, balance_amount, corrected_balance_amount
      │
      ├─ 2. Movimentações Financeiras (2 métricas)
-     │   └─ total_movimentacoes, valor_total_movimentado
+     │   └─ total_movimentacoes, valor_liquido
      │
      ├─ 3. [Income] Valores Específicos (2 métricas)
      │   └─ income_embedded_interest_amount, income_interest_rate

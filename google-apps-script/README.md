@@ -107,7 +107,7 @@ Looker Studio (dados unificados)
 #### 8️⃣ Movimentações Financeiras (4 campos CALCULADOS)
 **Processados dos arrays JSONB `receipts` e `payments`**
 - `total_movimentacoes`: Total de Movimentações (quantidade)
-- `valor_total_movimentado`: Valor Total Movimentado (R$)
+- `valor_liquido`: Valor Líquido (R$) - soma dos valores líquidos recebidos/pagos
 - `data_ultima_movimentacao`: Data da Última Movimentação
 - `situacao_pagamento`: Situação de Pagamento (Pago/Parcial/Pendente)
 

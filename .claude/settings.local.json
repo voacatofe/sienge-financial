@@ -14,7 +14,9 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(echo:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(iconv:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

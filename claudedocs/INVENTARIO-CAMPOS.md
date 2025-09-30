@@ -95,7 +95,7 @@ Por exemplo:
 - `balance_amount` 📊 - Saldo Devedor
 - `corrected_balance_amount` 📊 - Saldo Corrigido
 - `total_movimentacoes` 🧮 - Total de Movimentações (COUNT de receipts/payments)
-- `valor_total_movimentado` 🧮 - Valor Total Movimentado (SUM de receipts/payments)
+- `valor_liquido` 🧮 - Valor Líquido (SUM de receipts/payments netAmount)
 
 ---
 
@@ -193,11 +193,14 @@ Por exemplo:
 - **Se Outcome**: `COUNT(payments)` - tamanho do array JSONB `payments`
 - **Nota**: Cada registro tem apenas UM dos arrays preenchido (nunca os dois)
 
-### 5. **valor_total_movimentado** (Grupo: Financeiro)
-**Cálculo**: Soma de valores recebidos/pagos
-- **Se Income**: `SUM(receipts.netAmount)` - soma campo `netAmount` do array JSONB `receipts`
-- **Se Outcome**: `SUM(payments.netAmount)` - soma campo `netAmount` do array JSONB `payments`
-- **Nota**: Cada registro tem apenas UM dos arrays preenchido (nunca os dois)
+### 5. **valor_liquido** (Grupo: Financeiro)
+**Cálculo**: Soma dos valores líquidos recebidos/pagos
+- **Se Income**: `SUM(receipts.netAmount)` - soma campo `netAmount` (valor líquido após ajustes) do array JSONB `receipts`
+- **Se Outcome**: `SUM(payments.netAmount)` - soma campo `netAmount` (valor líquido após ajustes) do array JSONB `payments`
+- **Nota**:
+  - `netAmount` já representa o valor líquido (após descontos, acréscimos, seguros, taxas)
+  - Cada registro tem apenas UM dos arrays preenchido (nunca os dois)
+  - Equivale ao "Valor líquido" do CSV Sienge (soma de todas as baixas da parcela)
 
 ### 6. **outcome_total_departamentos** (Grupo: Contas a Pagar)
 **Cálculo**: Quantidade de departamentos vinculados

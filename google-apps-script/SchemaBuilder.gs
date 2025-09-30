@@ -332,9 +332,9 @@ function getFields(showIds) {
     .setGroup('Financeiro');
 
   fields.newMetric()
-    .setId('valor_total_movimentado')
-    .setName('Valor Total Movimentado')
-    .setDescription('Soma de todos recebimentos ou pagamentos')
+    .setId('valor_liquido')
+    .setName('Valor Líquido')
+    .setDescription('Soma dos valores líquidos de todos os recebimentos/pagamentos')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
     .setGroup('Financeiro');
