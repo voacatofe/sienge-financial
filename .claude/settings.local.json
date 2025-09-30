@@ -16,7 +16,8 @@
       "Bash(echo:*)",
       "WebSearch",
       "Bash(iconv:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(psql:*)"
     ],
     "deny": [],
     "ask": []
