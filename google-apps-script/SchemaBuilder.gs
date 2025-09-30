@@ -268,6 +268,13 @@ function getFields(showIds) {
 
   // Dimensões
   fields.newDimension()
+    .setId('status_parcela')
+    .setName('Status da Parcela')
+    .setDescription('Paga/Recebida, Vencida, A Pagar/A Receber, Não Autorizada')
+    .setType(types.TEXT)
+    .setGroup('Financeiro');
+
+  fields.newDimension()
     .setId('situacao_pagamento')
     .setName('Situação de Pagamento')
     .setDescription('Pago / Parcial / Pendente')

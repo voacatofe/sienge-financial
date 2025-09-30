@@ -13,7 +13,7 @@ from datetime import datetime
 # ATENÇÃO: Altere a senha ou configure via variável de ambiente
 DB_CONFIG = {
     'host': os.getenv('POSTGRES_HOST', '147.93.15.121'),
-    'port': int(os.getenv('POSTGRES_EXTERNAL_PORT', '5432')),
+    'port': int(os.getenv('POSTGRES_EXTERNAL_PORT', '5436')),
     'dbname': os.getenv('POSTGRES_DB', 'sienge_data'),
     'user': os.getenv('POSTGRES_USER', 'sienge_app'),
     'password': os.getenv('POSTGRES_PASSWORD', 'ALTERE_AQUI')  # Ou passe via variável de ambiente

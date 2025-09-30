@@ -64,7 +64,17 @@ CREATE TABLE income_data (
 
     -- Arrays stored as JSONB for flexibility
     receipts JSONB,
-    receipts_categories JSONB
+    receipts_categories JSONB,
+
+    -- Generated column for status
+    status_parcela VARCHAR GENERATED ALWAYS AS (
+        CASE
+            WHEN balance_amount = 0 OR balance_amount IS NULL THEN 'Recebida'
+            WHEN due_date < CURRENT_DATE AND balance_amount > 0 THEN 'Vencida'
+            WHEN balance_amount > 0 THEN 'A Receber'
+            ELSE 'Indefinido'
+        END
+    ) STORED
 );
 
 -- ==========================================
@@ -121,7 +131,18 @@ CREATE TABLE outcome_data (
     payments_categories JSONB,
     departments_costs JSONB,
     buildings_costs JSONB,
-    authorizations JSONB
+    authorizations JSONB,
+
+    -- Generated column for status
+    status_parcela VARCHAR GENERATED ALWAYS AS (
+        CASE
+            WHEN balance_amount = 0 OR balance_amount IS NULL THEN 'Paga'
+            WHEN due_date < CURRENT_DATE AND balance_amount > 0 THEN 'Vencida'
+            WHEN authorization_status = 'N' OR authorization_status IS NULL THEN 'Não Autorizada'
+            WHEN authorization_status = 'S' AND balance_amount > 0 THEN 'A Pagar'
+            ELSE 'Indefinido'
+        END
+    ) STORED
 );
 
 -- ==========================================

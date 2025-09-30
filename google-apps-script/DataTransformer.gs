@@ -196,6 +196,10 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
     return getLastDate(movements, 'paymentDate');
   }
 
+  if (fieldName === 'status_parcela') {
+    return safeValue(record.status_parcela, '');
+  }
+
   if (fieldName === 'situacao_pagamento') {
     if (!calculateMetrics) return CONFIG.STATUS_PENDING;
 
