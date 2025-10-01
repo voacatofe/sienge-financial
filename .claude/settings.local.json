@@ -20,7 +20,10 @@
       "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT ''BRASCON'' as credor, COUNT(*) as qtd_titulos, SUM(original_amount) as total_original FROM outcome_data WHERE company_name = ''ABF EMPREENDIMENTOS IMOBILIARIOS LTDA'' AND creditor_name LIKE ''%BRASCON%'' AND due_date = ''2025-09-24'' UNION ALL SELECT ''FORTPEL'', COUNT(*), SUM(original_amount) FROM outcome_data WHERE company_name = ''ABF EMPREENDIMENTOS IMOBILIARIOS LTDA'' AND creditor_name LIKE ''%FORTPEL%'' AND due_date = ''2025-09-24'';\")",
       "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT COUNT(*) as total_records FROM outcome_data;\")",
       "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT COUNT(*) as total_records FROM income_data;\")",
-      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT tablename, pg_size_pretty(pg_total_relation_size(schemaname||''.''||tablename)) AS size FROM pg_tables WHERE schemaname = ''public'' AND (tablename = ''income_data'' OR tablename = ''outcome_data'');\")"
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT tablename, pg_size_pretty(pg_total_relation_size(schemaname||''.''||tablename)) AS size FROM pg_tables WHERE schemaname = ''public'' AND (tablename = ''income_data'' OR tablename = ''outcome_data'');\")",
+      "SlashCommand(/sc:analyze)",
+      "WebSearch",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []
