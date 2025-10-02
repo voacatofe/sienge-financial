@@ -66,12 +66,33 @@ CREATE TABLE income_data (
     receipts JSONB,
     receipts_categories JSONB,
 
-    -- Generated column for status
+    -- Generated column for status (considera receipts JSONB para maior precisão)
+    -- Nota: Não usa CURRENT_DATE porque torna expressão volátil
+    -- Status "Vencida" pode ser calculado via: WHERE due_date < CURRENT_DATE AND status_parcela = 'A Receber'
     status_parcela VARCHAR GENERATED ALWAYS AS (
         CASE
-            WHEN balance_amount = 0 OR balance_amount IS NULL THEN 'Recebida'
-            WHEN due_date < CURRENT_DATE AND balance_amount > 0 THEN 'Vencida'
-            WHEN balance_amount > 0 THEN 'A Receber'
+            -- Pagamentos completos (tem recebimento em receipts e balance zerado)
+            WHEN receipts IS NOT NULL
+                 AND jsonb_array_length(receipts) > 0
+                 AND (balance_amount = 0 OR balance_amount IS NULL)
+            THEN 'Recebida'
+
+            -- Pagamentos parciais (tem recebimento em receipts mas ainda tem saldo)
+            WHEN receipts IS NOT NULL
+                 AND jsonb_array_length(receipts) > 0
+                 AND balance_amount > 0
+            THEN 'Recebida Parcialmente'
+
+            -- Cancelamentos/Ajustes (balance zerado mas sem recebimentos)
+            WHEN (receipts IS NULL OR jsonb_array_length(receipts) = 0)
+                 AND (balance_amount = 0 OR balance_amount IS NULL)
+            THEN 'Cancelada'
+
+            -- A receber (sem recebimento e tem saldo)
+            WHEN balance_amount > 0
+                 AND (receipts IS NULL OR jsonb_array_length(receipts) = 0)
+            THEN 'A Receber'
+
             ELSE 'Indefinido'
         END
     ) STORED,
@@ -82,6 +103,16 @@ CREATE TABLE income_data (
             WHEN receipts_categories IS NOT NULL
                  AND jsonb_array_length(receipts_categories) > 0
             THEN receipts_categories->0->>'costCenterName'
+            ELSE NULL
+        END
+    ) STORED,
+
+    -- Generated column for payment date (from receipts JSONB)
+    payment_date DATE GENERATED ALWAYS AS (
+        CASE
+            WHEN receipts IS NOT NULL
+                 AND jsonb_array_length(receipts) > 0
+            THEN (receipts->0->>'paymentDate')::DATE
             ELSE NULL
         END
     ) STORED
@@ -143,13 +174,38 @@ CREATE TABLE outcome_data (
     buildings_costs JSONB,
     authorizations JSONB,
 
-    -- Generated column for status
+    -- Generated column for status (considera payments JSONB para maior precisão)
+    -- Nota: Não usa CURRENT_DATE porque torna expressão volátil
+    -- Status "Vencida" pode ser calculado via: WHERE due_date < CURRENT_DATE AND status_parcela = 'A Pagar'
     status_parcela VARCHAR GENERATED ALWAYS AS (
         CASE
-            WHEN balance_amount = 0 OR balance_amount IS NULL THEN 'Paga'
-            WHEN due_date < CURRENT_DATE AND balance_amount > 0 THEN 'Vencida'
-            WHEN authorization_status = 'N' OR authorization_status IS NULL THEN 'Não Autorizada'
-            WHEN authorization_status = 'S' AND balance_amount > 0 THEN 'A Pagar'
+            -- Pagamentos completos (tem pagamento em payments e balance zerado)
+            WHEN payments IS NOT NULL
+                 AND jsonb_array_length(payments) > 0
+                 AND (balance_amount = 0 OR balance_amount IS NULL)
+            THEN 'Paga'
+
+            -- Pagamentos parciais (tem pagamento em payments mas ainda tem saldo)
+            WHEN payments IS NOT NULL
+                 AND jsonb_array_length(payments) > 0
+                 AND balance_amount > 0
+            THEN 'Paga Parcialmente'
+
+            -- Cancelamentos/Ajustes (balance zerado mas sem pagamentos)
+            WHEN (payments IS NULL OR jsonb_array_length(payments) = 0)
+                 AND (balance_amount = 0 OR balance_amount IS NULL)
+            THEN 'Cancelada'
+
+            -- Não autorizadas (tem prioridade sobre outros status)
+            WHEN authorization_status = 'N' OR authorization_status IS NULL
+            THEN 'Não Autorizada'
+
+            -- A pagar (sem pagamento, autorizada e tem saldo)
+            WHEN authorization_status = 'S'
+                 AND balance_amount > 0
+                 AND (payments IS NULL OR jsonb_array_length(payments) = 0)
+            THEN 'A Pagar'
+
             ELSE 'Indefinido'
         END
     ) STORED,
@@ -160,6 +216,16 @@ CREATE TABLE outcome_data (
             WHEN payments_categories IS NOT NULL
                  AND jsonb_array_length(payments_categories) > 0
             THEN payments_categories->0->>'costCenterName'
+            ELSE NULL
+        END
+    ) STORED,
+
+    -- Generated column for payment date (from payments JSONB)
+    payment_date DATE GENERATED ALWAYS AS (
+        CASE
+            WHEN payments IS NOT NULL
+                 AND jsonb_array_length(payments) > 0
+            THEN (payments->0->>'paymentDate')::DATE
             ELSE NULL
         END
     ) STORED
@@ -187,6 +253,7 @@ CREATE INDEX idx_income_issue_date ON income_data(issue_date);
 CREATE INDEX idx_income_receipts ON income_data USING GIN(receipts);
 CREATE INDEX idx_income_categories ON income_data USING GIN(receipts_categories);
 CREATE INDEX idx_income_cost_center ON income_data(cost_center_name);
+CREATE INDEX idx_income_payment_date ON income_data(payment_date);
 
 -- Outcome table indexes
 CREATE INDEX idx_outcome_installment ON outcome_data(installment_id);
@@ -198,6 +265,7 @@ CREATE INDEX idx_outcome_issue_date ON outcome_data(issue_date);
 CREATE INDEX idx_outcome_payments ON outcome_data USING GIN(payments);
 CREATE INDEX idx_outcome_categories ON outcome_data USING GIN(payments_categories);
 CREATE INDEX idx_outcome_cost_center ON outcome_data(cost_center_name);
+CREATE INDEX idx_outcome_payment_date ON outcome_data(payment_date);
 
 -- ==========================================
 -- SYNC CONTROL TABLE

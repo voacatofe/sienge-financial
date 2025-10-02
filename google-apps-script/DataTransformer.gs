@@ -153,7 +153,8 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
     'due_date',
     'issue_date',
     'bill_date',
-    'installment_base_date'
+    'installment_base_date',
+    'payment_date'
   ];
 
   if (dateFields.indexOf(fieldName) !== -1) {

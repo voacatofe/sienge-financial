@@ -39,7 +39,25 @@ Sienge Financial Data Sync is a financial data integration system that:
 - `income_data`: 47 fields + JSONB arrays (`receipts`, `receipts_categories`)
 - `outcome_data`: 44 fields + JSONB arrays (`payments`, `payments_categories`, etc.)
 - Both use composite ID: `installment_id + bill_id` (format: "47_635")
-- Generated `status_parcela` column calculates payment status automatically
+- Generated columns: `status_parcela`, `cost_center_name`, `payment_date`
+
+**Status Parcela (GENERATED COLUMN)**:
+Calcula status baseado em JSONB arrays e balance_amount:
+
+*Income Data*:
+- **Recebida**: Tem recebimento em `receipts` + balance zerado
+- **Recebida Parcialmente**: Tem recebimento mas ainda tem saldo
+- **Cancelada**: Balance zerado mas sem recebimentos
+- **A Receber**: Sem recebimento e tem saldo
+
+*Outcome Data*:
+- **Paga**: Tem pagamento em `payments` + balance zerado
+- **Paga Parcialmente**: Tem pagamento mas ainda tem saldo
+- **Cancelada**: Balance zerado mas sem pagamentos
+- **Não Autorizada**: `authorization_status = 'N'` ou NULL
+- **A Pagar**: Autorizada, sem pagamento e tem saldo
+
+**Nota**: Status "Vencida" não é calculado automaticamente (CURRENT_DATE torna expressão volátil). Use query: `WHERE due_date < CURRENT_DATE AND status_parcela IN ('A Receber', 'A Pagar')`
 
 **Sync Control:**
 - `sync_control` table tracks all synchronization operations

@@ -4,14 +4,14 @@
  *
  * NOVA ESTRUTURA:
  * - Grupo 1: IDs (16 campos) - OPCIONAL via config
- * - Grupo 2: Básicos (7 campos)
+ * - Grupo 2: Básicos (8 campos) - inclui Data de Pagamento
  * - Grupo 3: Empresa (8 campos) - inclui Centro de Custo
  * - Grupo 4: Partes (4 campos)
  * - Grupo 5: Financeiro (11 campos) - dimensões + métricas
  * - Grupo 6: Contas a Receber (13 campos) - dimensões + métricas
  * - Grupo 7: Contas a Pagar (9 campos) - dimensões + métricas
  *
- * Total: 81 campos (54 dimensões + 12 métricas) com Cliente/Credor separados
+ * Total: 82 campos (55 dimensões + 12 métricas) com Cliente/Credor separados
  */
 
 /**
@@ -183,6 +183,13 @@ function getFields(showIds) {
     .setId('data_ultima_movimentacao')
     .setName('Data da Última Movimentação')
     .setDescription('Data do último recebimento ou pagamento')
+    .setType(types.YEAR_MONTH_DAY)
+    .setGroup('Basicos');
+
+  fields.newDimension()
+    .setId('payment_date')
+    .setName('Data de Pagamento')
+    .setDescription('Data do primeiro pagamento ou recebimento')
     .setType(types.YEAR_MONTH_DAY)
     .setGroup('Basicos');
 
