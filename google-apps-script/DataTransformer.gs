@@ -78,7 +78,8 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
     'group_company_id', 'group_company_name',
     'holding_id', 'holding_name',
     'subsidiary_id', 'subsidiary_name',
-    'business_type_id', 'business_type_name'
+    'business_type_id', 'business_type_name',
+    'cost_center_name'
   ];
 
   if (empresaFields.indexOf(fieldName) !== -1) {

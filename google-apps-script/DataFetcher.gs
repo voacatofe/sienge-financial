@@ -165,12 +165,12 @@ function fetchAllPaginated(baseUrl, filters) {
 }
 
 /**
- * Constrói URL com parâmetros de query (apenas paginação)
- * SIMPLIFICADO: Busca TODOS os dados, deixa Looker Studio fazer filtragem client-side
+ * Constrói URL com parâmetros de query (paginação + filtros)
+ * OTIMIZADO: Envia filtros para API (query pushdown)
  * ✅ SECURITY: Valida e sanitiza parâmetros de URL
  *
  * @param {string} baseUrl - Endpoint base
- * @param {Object} filters - Ignorado (não usado)
+ * @param {Object} filters - Filtros da query (dateRange, dimensionsFilters)
  * @param {number} limit - Limite de registros por página
  * @param {number} offset - Offset para paginação
  * @returns {string} URL completa com query parameters
@@ -192,11 +192,67 @@ function buildQueryUrl(baseUrl, filters, limit, offset) {
 
   var params = ['limit=' + safeLimit, 'offset=' + safeOffset];
 
+  // ==========================================
+  // NOVO: Aplicar filtros de data
+  // ==========================================
+
+  if (filters && filters.dateRange) {
+    if (filters.dateRange.startDate) {
+      var startDate = formatDateForApi(filters.dateRange.startDate);
+      params.push('start_date=' + encodeURIComponent(startDate));
+    }
+
+    if (filters.dateRange.endDate) {
+      var endDate = formatDateForApi(filters.dateRange.endDate);
+      params.push('end_date=' + encodeURIComponent(endDate));
+    }
+  }
+
+  // ==========================================
+  // NOVO: Aplicar filtros de dimensões
+  // ==========================================
+
+  if (filters && filters.dimensionsFilters && filters.dimensionsFilters.length > 0) {
+    filters.dimensionsFilters.forEach(function(filter) {
+      var fieldName = filter.fieldName;
+      var values = filter.values || [];
+
+      // Mapear campos Looker → API
+      var apiParam = mapLookerFieldToApiParam(fieldName);
+
+      if (apiParam && values.length > 0) {
+        // Para filtros de texto, usar o primeiro valor
+        var value = values[0];
+        params.push(apiParam + '=' + encodeURIComponent(value));
+      }
+    });
+  }
+
   var finalUrl = baseUrl + '?' + params.join('&');
 
-  LOGGING.info('Query URL: ' + finalUrl);
+  LOGGING.info('Query URL with filters: ' + finalUrl);
 
   return finalUrl;
+}
+
+/**
+ * Mapeia campos do Looker para parâmetros da API
+ * @param {string} lookerField - Nome do campo no Looker
+ * @returns {string} Nome do parâmetro na API
+ */
+function mapLookerFieldToApiParam(lookerField) {
+  var mapping = {
+    'company_id': 'company_id',
+    'company_name': 'company_name',
+    'cliente_id': 'client_id',
+    'cliente_nome': 'client_name',
+    'credor_id': 'creditor_id',
+    'credor_nome': 'creditor_name',
+    'project_id': 'project_id',
+    'business_area_id': 'business_area_id'
+  };
+
+  return mapping[lookerField] || null;
 }
 
 /**

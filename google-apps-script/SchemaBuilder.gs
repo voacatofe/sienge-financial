@@ -5,13 +5,13 @@
  * NOVA ESTRUTURA:
  * - Grupo 1: IDs (16 campos) - OPCIONAL via config
  * - Grupo 2: Básicos (7 campos)
- * - Grupo 3: Empresa (7 campos)
+ * - Grupo 3: Empresa (8 campos) - inclui Centro de Custo
  * - Grupo 4: Partes (4 campos)
  * - Grupo 5: Financeiro (11 campos) - dimensões + métricas
  * - Grupo 6: Contas a Receber (13 campos) - dimensões + métricas
  * - Grupo 7: Contas a Pagar (9 campos) - dimensões + métricas
  *
- * Total: 80 campos (53 dimensões + 12 métricas) com Cliente/Credor separados
+ * Total: 81 campos (54 dimensões + 12 métricas) com Cliente/Credor separados
  */
 
 /**
@@ -229,6 +229,13 @@ function getFields(showIds) {
   fields.newDimension()
     .setId('business_type_name')
     .setName('Tipo de Negócio')
+    .setType(types.TEXT)
+    .setGroup('Empresa');
+
+  fields.newDimension()
+    .setId('cost_center_name')
+    .setName('Centro de Custo')
+    .setDescription('Centro de Custo extraído de categories')
     .setType(types.TEXT)
     .setGroup('Empresa');
 

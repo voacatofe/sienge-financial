@@ -74,6 +74,16 @@ CREATE TABLE income_data (
             WHEN balance_amount > 0 THEN 'A Receber'
             ELSE 'Indefinido'
         END
+    ) STORED,
+
+    -- Generated column for cost center (from receipts_categories JSONB)
+    cost_center_name VARCHAR GENERATED ALWAYS AS (
+        CASE
+            WHEN receipts_categories IS NOT NULL
+                 AND jsonb_array_length(receipts_categories) > 0
+            THEN receipts_categories->0->>'costCenterName'
+            ELSE NULL
+        END
     ) STORED
 );
 
@@ -142,6 +152,16 @@ CREATE TABLE outcome_data (
             WHEN authorization_status = 'S' AND balance_amount > 0 THEN 'A Pagar'
             ELSE 'Indefinido'
         END
+    ) STORED,
+
+    -- Generated column for cost center (from payments_categories JSONB)
+    cost_center_name VARCHAR GENERATED ALWAYS AS (
+        CASE
+            WHEN payments_categories IS NOT NULL
+                 AND jsonb_array_length(payments_categories) > 0
+            THEN payments_categories->0->>'costCenterName'
+            ELSE NULL
+        END
     ) STORED
 );
 
@@ -166,6 +186,7 @@ CREATE INDEX idx_income_company ON income_data(company_id);
 CREATE INDEX idx_income_issue_date ON income_data(issue_date);
 CREATE INDEX idx_income_receipts ON income_data USING GIN(receipts);
 CREATE INDEX idx_income_categories ON income_data USING GIN(receipts_categories);
+CREATE INDEX idx_income_cost_center ON income_data(cost_center_name);
 
 -- Outcome table indexes
 CREATE INDEX idx_outcome_installment ON outcome_data(installment_id);
@@ -176,6 +197,7 @@ CREATE INDEX idx_outcome_company ON outcome_data(company_id);
 CREATE INDEX idx_outcome_issue_date ON outcome_data(issue_date);
 CREATE INDEX idx_outcome_payments ON outcome_data USING GIN(payments);
 CREATE INDEX idx_outcome_categories ON outcome_data USING GIN(payments_categories);
+CREATE INDEX idx_outcome_cost_center ON outcome_data(cost_center_name);
 
 -- ==========================================
 -- SYNC CONTROL TABLE

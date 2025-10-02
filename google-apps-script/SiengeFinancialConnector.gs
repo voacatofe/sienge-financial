@@ -68,7 +68,11 @@ function getConfig(request) {
       .setAllowOverride(true);
   }
 
-  config.setDateRangeRequired(false);
+  // ==========================================
+  // Date Range (OBRIGATÓRIO para performance)
+  // ==========================================
+
+  config.setDateRangeRequired(true);
 
   return config.build();
 }
@@ -112,13 +116,40 @@ function getData(request) {
     validateRequestedFields(request.fields);
 
     // ==========================================
-    // ETAPA 2: Buscar Dados da API
+    // ETAPA 1.5: Aplicar Default Date Filter (3 meses)
     // ==========================================
 
-    LOGGING.info('Fetching ALL data from API (no server-side filters)');
+    // Se usuário não especificou date range, aplicar padrão de 3 meses
+    if (!request.dateRange || !request.dateRange.startDate) {
+      var today = new Date();
+      var threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(today.getMonth() - 3);
 
-    // SIMPLIFICADO: Buscar TODOS os dados, deixar Looker Studio filtrar
-    var allRecords = fetchAllData(request.configParams, null);
+      request.dateRange = {
+        startDate: Utilities.formatDate(threeMonthsAgo, 'GMT', 'yyyyMMdd'),
+        endDate: Utilities.formatDate(today, 'GMT', 'yyyyMMdd')
+      };
+
+      LOGGING.info('Applied default date filter: last 3 months (' + request.dateRange.startDate + ' to ' + request.dateRange.endDate + ')');
+    } else {
+      LOGGING.info('Using user-specified date range: ' + request.dateRange.startDate + ' to ' + request.dateRange.endDate);
+    }
+
+    // ==========================================
+    // ETAPA 2: Buscar Dados da API (com filtros)
+    // ==========================================
+
+    LOGGING.info('Fetching data from API with server-side filters');
+
+    // Construir objeto de filtros para passar à API
+    var requestFilters = {
+      dateRange: request.dateRange,
+      dimensionsFilters: request.dimensionsFilters || [],
+      metricFilters: request.metricFilters || []
+    };
+
+    // Buscar dados com filtros aplicados
+    var allRecords = fetchAllData(request.configParams, requestFilters);
 
     if (allRecords.length === 0) {
       LOGGING.warn('No records returned from API');

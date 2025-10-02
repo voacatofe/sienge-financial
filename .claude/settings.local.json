@@ -24,7 +24,14 @@
       "SlashCommand(/sc:analyze)",
       "WebSearch",
       "Bash(python:*)",
-      "Bash(PGPASSWORD='TROQUE_ESTA_SENHA_EM_PRODUCAO' psql:*)"
+      "Bash(PGPASSWORD='TROQUE_ESTA_SENHA_EM_PRODUCAO' psql:*)",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT COUNT(*) as total_outcome FROM outcome_data;\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT pg_size_pretty(pg_total_relation_size(''income_data'')) as income_size, pg_size_pretty(pg_total_relation_size(''outcome_data'')) as outcome_size;\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT MIN(due_date) as oldest, MAX(due_date) as newest, COUNT(*) as total FROM income_data;\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT MIN(due_date) as oldest, MAX(due_date) as newest, COUNT(*) as total FROM outcome_data;\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT COUNT(DISTINCT company_name) as total_companies FROM income_data UNION ALL SELECT COUNT(DISTINCT company_name) FROM outcome_data;\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT COUNT(*) as last_3_months FROM outcome_data WHERE due_date >= CURRENT_DATE - INTERVAL ''3 months'';\")",
+      "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT COUNT(*) as last_12_months FROM income_data WHERE due_date >= CURRENT_DATE - INTERVAL ''12 months'';\")"
     ],
     "deny": [],
     "ask": []
