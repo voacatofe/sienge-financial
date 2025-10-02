@@ -23,7 +23,8 @@
       "Bash(PGPASSWORD=\"TROQUE_ESTA_SENHA_EM_PRODUCAO\" psql -h 147.93.15.121 -p 5436 -U sienge_app -d sienge_data -c \"SELECT tablename, pg_size_pretty(pg_total_relation_size(schemaname||''.''||tablename)) AS size FROM pg_tables WHERE schemaname = ''public'' AND (tablename = ''income_data'' OR tablename = ''outcome_data'');\")",
       "SlashCommand(/sc:analyze)",
       "WebSearch",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(PGPASSWORD='TROQUE_ESTA_SENHA_EM_PRODUCAO' psql:*)"
     ],
     "deny": [],
     "ask": []

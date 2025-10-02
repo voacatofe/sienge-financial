@@ -19,10 +19,16 @@ var CONFIG = {
   API_URL: 'https://sienge-app.hvlihi.easypanel.host',
   MAX_RECORDS_PER_REQUEST: 1000,
 
+  // Security Configuration
+  REQUEST_TIMEOUT_SECONDS: 30, // Timeout de 30 segundos para requisições
+  MAX_RETRIES: 2, // Máximo de tentativas em caso de falha
+  VALIDATE_HTTPS: true, // Força validação de HTTPS
+
   // Cache Configuration
   // ✅ PERFORMANCE: Aumentado de 5min para 30min
   // Dados financeiros não mudam frequentemente, cache mais longo reduz chamadas de API
   CACHE_DURATION_SECONDS: 1800, // 30 minutos (era 300 = 5min)
+  CACHE_MAX_SIZE_BYTES: 95000, // Limite de 95KB por item (limite do Apps Script é 100KB)
 
   // Record Types
   RECORD_TYPE_INCOME: 'income',

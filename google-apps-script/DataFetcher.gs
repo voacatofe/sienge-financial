@@ -167,6 +167,7 @@ function fetchAllPaginated(baseUrl, filters) {
 /**
  * Constrói URL com parâmetros de query (apenas paginação)
  * SIMPLIFICADO: Busca TODOS os dados, deixa Looker Studio fazer filtragem client-side
+ * ✅ SECURITY: Valida e sanitiza parâmetros de URL
  *
  * @param {string} baseUrl - Endpoint base
  * @param {Object} filters - Ignorado (não usado)
@@ -175,7 +176,21 @@ function fetchAllPaginated(baseUrl, filters) {
  * @returns {string} URL completa com query parameters
  */
 function buildQueryUrl(baseUrl, filters, limit, offset) {
-  var params = ['limit=' + limit, 'offset=' + offset];
+  // ✅ SECURITY: Valida que limit e offset são números seguros
+  var safeLimit = parseInt(limit, 10);
+  var safeOffset = parseInt(offset, 10);
+
+  if (isNaN(safeLimit) || safeLimit < 1 || safeLimit > 10000) {
+    LOGGING.warn('Invalid limit, using default: ' + limit);
+    safeLimit = 1000;
+  }
+
+  if (isNaN(safeOffset) || safeOffset < 0 || safeOffset > 1000000) {
+    LOGGING.warn('Invalid offset, using default: ' + offset);
+    safeOffset = 0;
+  }
+
+  var params = ['limit=' + safeLimit, 'offset=' + safeOffset];
 
   var finalUrl = baseUrl + '?' + params.join('&');
 

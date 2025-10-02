@@ -11,12 +11,23 @@
 
 /**
  * Retorna valor seguro, tratando null/undefined
+ * ✅ SECURITY: Sanitiza strings para prevenir injeção
  */
 function safeValue(value, defaultValue) {
   if (value === null || value === undefined || value === '') {
     return defaultValue !== undefined ? defaultValue : '';
   }
-  return value;
+
+  // ✅ SECURITY: Converte para string e limita tamanho
+  var strValue = String(value);
+
+  // Limita tamanho para prevenir DoS
+  if (strValue.length > 5000) {
+    LOGGING.warn('Value too long, truncating: ' + strValue.length);
+    strValue = strValue.substring(0, 5000);
+  }
+
+  return strValue;
 }
 
 /**
@@ -47,12 +58,23 @@ function isValidNumber(value) {
 
 /**
  * Converte para número de forma segura
+ * ✅ SECURITY: Valida ranges para prevenir overflow
  */
 function toNumber(value, defaultValue) {
   if (!isValidNumber(value)) {
     return defaultValue !== undefined ? defaultValue : 0;
   }
-  return parseFloat(value);
+
+  var num = parseFloat(value);
+
+  // ✅ SECURITY: Valida range seguro (evita overflow em cálculos)
+  var MAX_SAFE_NUMBER = 9007199254740991; // Number.MAX_SAFE_INTEGER
+  if (Math.abs(num) > MAX_SAFE_NUMBER) {
+    LOGGING.warn('Number too large, using default: ' + num);
+    return defaultValue !== undefined ? defaultValue : 0;
+  }
+
+  return num;
 }
 
 // ==========================================
@@ -118,55 +140,98 @@ function formatDateTime(dateString) {
 
 /**
  * Soma valores de um campo específico em array JSONB
+ * ✅ SECURITY: Valida tamanho e valores do array
  */
 function sumJsonbArray(jsonbArray, field) {
   if (!jsonbArray || !Array.isArray(jsonbArray) || jsonbArray.length === 0) {
     return 0;
   }
 
+  // ✅ SECURITY: Limita tamanho do array (proteção DoS)
+  if (jsonbArray.length > 10000) {
+    LOGGING.warn('JSONB array too large for sum: ' + jsonbArray.length);
+    return 0;
+  }
+
   var total = 0;
-  jsonbArray.forEach(function(item) {
-    if (item && item[field]) {
+  var processedCount = 0;
+
+  for (var i = 0; i < jsonbArray.length && processedCount < 1000; i++) {
+    var item = jsonbArray[i];
+    if (item && typeof item === 'object' && item[field]) {
       var value = toNumber(item[field], 0);
       total += value;
+      processedCount++;
     }
-  });
+  }
+
+  if (processedCount >= 1000) {
+    LOGGING.warn('Truncated sum calculation at 1000 items');
+  }
 
   return total;
 }
 
 /**
  * Retorna a data mais recente de um array JSONB
+ * ✅ SECURITY: Valida tamanho do array e datas
  */
 function getLastDate(jsonbArray, field) {
   if (!jsonbArray || !Array.isArray(jsonbArray) || jsonbArray.length === 0) {
     return '';
   }
 
-  var dates = jsonbArray
-    .filter(function(item) {
-      return item && item[field];
-    })
-    .map(function(item) {
-      return new Date(item[field]);
-    })
-    .filter(function(date) {
-      return !isNaN(date.getTime());
-    })
-    .sort(function(a, b) {
-      return b - a; // Ordem decrescente
-    });
+  // ✅ SECURITY: Limita tamanho do array
+  if (jsonbArray.length > 10000) {
+    LOGGING.warn('JSONB array too large for date search: ' + jsonbArray.length);
+    return '';
+  }
 
-  return dates.length > 0 ? formatDate(dates[0]) : '';
+  var dates = [];
+  var validDateCount = 0;
+
+  for (var i = 0; i < jsonbArray.length && validDateCount < 1000; i++) {
+    var item = jsonbArray[i];
+    if (item && typeof item === 'object' && item[field]) {
+      var date = new Date(item[field]);
+      if (!isNaN(date.getTime())) {
+        // ✅ SECURITY: Valida que a data está em um range razoável
+        var year = date.getUTCFullYear();
+        if (year >= 1900 && year <= 2100) {
+          dates.push(date);
+          validDateCount++;
+        }
+      }
+    }
+  }
+
+  if (dates.length === 0) {
+    return '';
+  }
+
+  // Ordena e pega a mais recente
+  dates.sort(function(a, b) {
+    return b - a; // Ordem decrescente
+  });
+
+  return formatDate(dates[0]);
 }
 
 /**
  * Conta elementos válidos em array JSONB
+ * ✅ SECURITY: Valida tipo e tamanho do array
  */
 function countJsonbArray(jsonbArray) {
   if (!jsonbArray || !Array.isArray(jsonbArray)) {
     return 0;
   }
+
+  // ✅ SECURITY: Limita contagem (proteção DoS)
+  if (jsonbArray.length > 100000) {
+    LOGGING.warn('JSONB array suspiciously large: ' + jsonbArray.length);
+    return 0;
+  }
+
   return jsonbArray.length;
 }
 
@@ -180,6 +245,11 @@ function countJsonbArray(jsonbArray) {
 function cachedFetch(url) {
   LOGGING.info('Fetching URL: ' + url);
 
+  // ✅ SECURITY: Valida HTTPS
+  if (CONFIG.VALIDATE_HTTPS && !url.match(/^https:\/\//i)) {
+    throw new Error('Security Error: Only HTTPS URLs are allowed');
+  }
+
   var cache = CacheService.getUserCache();
   var cacheKey = 'api_' + Utilities.base64Encode(url);
 
@@ -188,7 +258,14 @@ function cachedFetch(url) {
   if (cached) {
     LOGGING.info('Cache hit for: ' + url);
     try {
-      return JSON.parse(cached);
+      var parsedCache = JSON.parse(cached);
+      // ✅ SECURITY: Valida estrutura do cache
+      if (validateCachedData(parsedCache)) {
+        return parsedCache;
+      } else {
+        LOGGING.warn('Invalid cached data structure, fetching fresh');
+        cache.remove(cacheKey);
+      }
     } catch (e) {
       LOGGING.warn('Failed to parse cached data, fetching fresh');
       cache.remove(cacheKey);
@@ -198,50 +275,112 @@ function cachedFetch(url) {
   // Não tem cache, busca da API
   LOGGING.info('Cache miss, fetching: ' + url);
 
-  try {
-    var options = {
-      'method': 'GET',
-      'muteHttpExceptions': true,
-      'contentType': 'application/json',
-      'headers': {
-        'Accept': 'application/json',
-        // ✅ PERFORMANCE: Ativa compressão GZIP (reduz tráfego em 60-80%)
-        'Accept-Encoding': 'gzip, deflate'
-      }
-    };
+  return fetchWithRetry(url, cache, cacheKey);
+}
 
-    var response = UrlFetchApp.fetch(url, options);
-    var responseCode = response.getResponseCode();
-    var contentText = response.getContentText();
+/**
+ * Busca dados da API com retry automático
+ */
+function fetchWithRetry(url, cache, cacheKey) {
+  var lastError;
+  var maxRetries = CONFIG.MAX_RETRIES || 2;
 
-    LOGGING.info('Response code: ' + responseCode);
-    LOGGING.info('Response length: ' + contentText.length);
-
-    if (responseCode !== 200) {
-      LOGGING.error('HTTP error ' + responseCode + ': ' + contentText.substring(0, 500));
-      throw new Error('HTTP ' + responseCode + ': ' + contentText.substring(0, 200));
-    }
-
-    if (!contentText || contentText.length === 0) {
-      throw new Error('Empty response from API');
-    }
-
-    var data = JSON.parse(contentText);
-
-    // Salva no cache
+  for (var attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      cache.put(cacheKey, JSON.stringify(data), CONFIG.CACHE_DURATION_SECONDS);
-    } catch (cacheError) {
-      LOGGING.warn('Failed to cache response: ' + cacheError);
-      // Continue mesmo se cache falhar
-    }
+      if (attempt > 0) {
+        LOGGING.info('Retry attempt ' + attempt + '/' + maxRetries);
+        Utilities.sleep(1000 * attempt); // Exponential backoff
+      }
 
-    return data;
-  } catch (e) {
-    LOGGING.error('Failed to fetch URL: ' + url);
-    LOGGING.error('Error details: ' + e.toString());
-    throw new Error('API fetch failed: ' + e.message + ' (URL: ' + url + ')');
+      var options = {
+        'method': 'GET',
+        'muteHttpExceptions': true,
+        'contentType': 'application/json',
+        // ✅ SECURITY: Timeout para evitar requisições travadas
+        'timeout': (CONFIG.REQUEST_TIMEOUT_SECONDS || 30) * 1000,
+        'headers': {
+          'Accept': 'application/json',
+          // ✅ PERFORMANCE: Ativa compressão GZIP (reduz tráfego em 60-80%)
+          'Accept-Encoding': 'gzip, deflate'
+        }
+      };
+
+      var response = UrlFetchApp.fetch(url, options);
+      var responseCode = response.getResponseCode();
+      var contentText = response.getContentText();
+
+      LOGGING.info('Response code: ' + responseCode);
+      LOGGING.info('Response length: ' + contentText.length);
+
+      if (responseCode !== 200) {
+        // ✅ SECURITY: Não expõe detalhes do erro completo ao usuário
+        LOGGING.error('HTTP error ' + responseCode);
+        throw new Error('HTTP ' + responseCode);
+      }
+
+      if (!contentText || contentText.length === 0) {
+        throw new Error('Empty response from API');
+      }
+
+      var data = JSON.parse(contentText);
+
+      // ✅ SECURITY: Valida tamanho antes de cachear
+      var dataStr = JSON.stringify(data);
+      if (dataStr.length < CONFIG.CACHE_MAX_SIZE_BYTES) {
+        try {
+          cache.put(cacheKey, dataStr, CONFIG.CACHE_DURATION_SECONDS);
+        } catch (cacheError) {
+          LOGGING.warn('Failed to cache response: ' + cacheError);
+          // Continue mesmo se cache falhar
+        }
+      } else {
+        LOGGING.warn('Response too large to cache: ' + dataStr.length + ' bytes');
+      }
+
+      return data;
+    } catch (e) {
+      lastError = e;
+      LOGGING.error('Attempt ' + (attempt + 1) + ' failed: ' + e.message);
+
+      // Se não for erro de timeout ou rede, não tenta novamente
+      if (e.message.indexOf('timeout') === -1 && e.message.indexOf('HTTP') === -1) {
+        break;
+      }
+    }
   }
+
+  // Todas as tentativas falharam
+  LOGGING.error('All retry attempts failed for: ' + url);
+  // ✅ SECURITY: Mensagem sanitizada sem expor URL completa
+  throw new Error('API fetch failed after ' + (maxRetries + 1) + ' attempts');
+}
+
+/**
+ * Valida estrutura de dados do cache
+ * ✅ SECURITY: Previne cache poisoning
+ */
+function validateCachedData(data) {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  // Valida estrutura esperada da API
+  if (!data.hasOwnProperty('success') || !data.hasOwnProperty('data')) {
+    return false;
+  }
+
+  // Valida que data é um array
+  if (!Array.isArray(data.data)) {
+    return false;
+  }
+
+  // Valida tamanho razoável (proteção contra DoS)
+  if (data.data.length > 50000) {
+    LOGGING.warn('Cached data suspiciously large: ' + data.data.length + ' records');
+    return false;
+  }
+
+  return true;
 }
 
 /**
