@@ -99,8 +99,9 @@ async def get_income_data(
     client_name: Optional[str] = Query(None, description="Partial search in client name"),
     project_id: Optional[int] = Query(None, description="Filter by project ID"),
     business_area_id: Optional[int] = Query(None, description="Filter by business area ID"),
-    start_date: Optional[date] = Query(None, description="Start date filter (due_date >= start_date)"),
-    end_date: Optional[date] = Query(None, description="End date filter (due_date <= end_date)"),
+    start_date: Optional[date] = Query(None, description="Start date for filtering"),
+    end_date: Optional[date] = Query(None, description="End date for filtering"),
+    date_field: str = Query('due_date', description="Date field to use for filtering (due_date, payment_date, issue_date, etc)"),
     min_amount: Optional[float] = Query(None, description="Minimum amount filter"),
     max_amount: Optional[float] = Query(None, description="Maximum amount filter"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum records to return"),
@@ -130,8 +131,8 @@ async def get_income_data(
         # Remove None values
         filters = {k: v for k, v in filters.items() if v is not None}
 
-        # Build WHERE clause
-        where_clause, params = build_where_clause(filters)
+        # Build WHERE clause with dynamic date field
+        where_clause, params = build_where_clause(filters, date_field=date_field)
 
         # Get total count
         count_query = f"SELECT COUNT(*) as total FROM income_data WHERE {where_clause}"
@@ -142,7 +143,7 @@ async def get_income_data(
         data_query = f"""
             SELECT * FROM income_data
             WHERE {where_clause}
-            ORDER BY due_date DESC, id
+            ORDER BY {date_field} DESC, id
             LIMIT %s OFFSET %s
         """
         data = execute_query(data_query, tuple(params + [limit, offset]))
@@ -196,8 +197,9 @@ async def get_outcome_data(
     creditor_name: Optional[str] = Query(None, description="Partial search in creditor name"),
     project_id: Optional[int] = Query(None, description="Filter by project ID"),
     business_area_id: Optional[int] = Query(None, description="Filter by business area ID"),
-    start_date: Optional[date] = Query(None, description="Start date filter (due_date >= start_date)"),
-    end_date: Optional[date] = Query(None, description="End date filter (due_date <= end_date)"),
+    start_date: Optional[date] = Query(None, description="Start date for filtering"),
+    end_date: Optional[date] = Query(None, description="End date for filtering"),
+    date_field: str = Query('due_date', description="Date field to use for filtering (due_date, payment_date, issue_date, etc)"),
     min_amount: Optional[float] = Query(None, description="Minimum amount filter"),
     max_amount: Optional[float] = Query(None, description="Maximum amount filter"),
     authorization_status: Optional[str] = Query(None, description="Filter by authorization status"),
@@ -229,8 +231,8 @@ async def get_outcome_data(
         # Remove None values
         filters = {k: v for k, v in filters.items() if v is not None}
 
-        # Build WHERE clause
-        where_clause, params = build_where_clause(filters)
+        # Build WHERE clause with dynamic date field
+        where_clause, params = build_where_clause(filters, date_field=date_field)
 
         # Get total count
         count_query = f"SELECT COUNT(*) as total FROM outcome_data WHERE {where_clause}"
@@ -241,7 +243,7 @@ async def get_outcome_data(
         data_query = f"""
             SELECT * FROM outcome_data
             WHERE {where_clause}
-            ORDER BY due_date DESC, id
+            ORDER BY {date_field} DESC, id
             LIMIT %s OFFSET %s
         """
         data = execute_query(data_query, tuple(params + [limit, offset]))

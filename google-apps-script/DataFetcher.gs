@@ -20,21 +20,21 @@ function fetchAllData(configParams, requestFilters) {
   var includeIncome = configParams.includeIncome !== 'false';
   var includeOutcome = configParams.includeOutcome !== 'false';
 
-  // NOVO: Capturar preferência de campo de data
-  var dateFieldPreference = configParams.dateFieldPreference || 'due_date';
+  // Capturar preferência de campo de data
+  var primaryDateId = configParams.primary_date || 'due_date';
 
   LOGGING.info('Fetching data from API: ' + apiUrl);
   LOGGING.info('Include Income: ' + includeIncome);
   LOGGING.info('Include Outcome: ' + includeOutcome);
-  LOGGING.info('Date Field Preference: ' + dateFieldPreference);
+  LOGGING.info('Primary Date Field: ' + primaryDateId);
 
-  // NOVO: Log dos filtros aplicados
+  // Log dos filtros aplicados
   if (requestFilters) {
     LOGGING.info('Applying filters: ' + JSON.stringify(requestFilters));
 
-    // Adicionar campo de data preferencial aos filtros
-    if (!requestFilters.dateFieldPreference) {
-      requestFilters.dateFieldPreference = dateFieldPreference;
+    // Adicionar campo de data aos filtros
+    if (!requestFilters.date_field) {
+      requestFilters.date_field = primaryDateId;
     }
   }
 
@@ -502,7 +502,15 @@ function buildQueryUrl(baseUrl, filters, limit, offset) {
   var params = ['limit=' + safeLimit, 'offset=' + safeOffset];
 
   // ==========================================
-  // NOVO: Aplicar filtros de data
+  // Aplicar campo de data preferencial
+  // ==========================================
+
+  if (filters && filters.date_field) {
+    params.push('date_field=' + encodeURIComponent(filters.date_field));
+  }
+
+  // ==========================================
+  // Aplicar filtros de data
   // ==========================================
 
   if (filters && filters.dateRange) {

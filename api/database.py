@@ -79,12 +79,13 @@ def execute_single(query: str, params: Optional[tuple] = None):
             conn.close()
 
 
-def build_where_clause(filters: dict) -> tuple[str, list]:
+def build_where_clause(filters: dict, date_field: str = 'due_date') -> tuple[str, list]:
     """
     Build WHERE clause from filters dictionary
 
     Args:
         filters: Dictionary of field_name: value pairs
+        date_field: Name of the date field to use for date range filtering (default: 'due_date')
 
     Returns:
         Tuple of (where_clause_string, parameters_list)
@@ -98,12 +99,12 @@ def build_where_clause(filters: dict) -> tuple[str, list]:
             if isinstance(value, str) and field.endswith('_name'):
                 conditions.append(f"{field} ILIKE %s")
                 params.append(f"%{value}%")
-            # Handle date range queries
+            # Handle date range queries with dynamic date field
             elif field == 'start_date':
-                conditions.append("due_date >= %s")
+                conditions.append(f"{date_field} >= %s")
                 params.append(value)
             elif field == 'end_date':
-                conditions.append("due_date <= %s")
+                conditions.append(f"{date_field} <= %s")
                 params.append(value)
             # Handle amount range queries
             elif field == 'min_amount':
