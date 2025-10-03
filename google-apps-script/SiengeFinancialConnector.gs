@@ -78,8 +78,6 @@ function getConfig(request) {
   // ==========================================
   // Seleção do Campo de Data Principal
   // ==========================================
-  // IMPORTANTE: Este seletor define qual campo real será mapeado para o campo
-  // virtual "date_primary", que é o primeiro campo de data do schema
 
   config.newSelectSingle()
     .setId('primary_date')
@@ -108,7 +106,7 @@ function getConfig(request) {
 
 /**
  * Retorna o schema de campos do conector
- * Schema com campos baseado em configuração (IDs opcionais + data principal)
+ * Schema com campos baseado em configuração
  */
 function getSchema(request) {
   LOGGING.info('Building schema for Looker Studio');
@@ -122,8 +120,6 @@ function getSchema(request) {
 
   // Extrair preferência de campo de data principal
   var primaryDateId = (request.configParams && request.configParams.primary_date) || 'due_date';
-
-  LOGGING.info('[PRIMARY] getSchema → primary_date=' + primaryDateId + ', showIds=' + showIds);
 
   return { schema: getFields(showIds, primaryDateId).build() };
 }
@@ -209,28 +205,13 @@ function getData(request) {
     // Extrair preferência de campo de data principal
     var primaryDateId = (request.configParams && request.configParams.primary_date) || 'due_date';
 
-    // Garantir que date_primary está sempre nas requestedFields (Passo 6)
-    if (requestedFieldIds.indexOf('date_primary') === -1) {
-      requestedFieldIds.unshift('date_primary');
-      LOGGING.info('[PRIMARY] Added date_primary to requested fields');
-    }
-
-    LOGGING.info('[PRIMARY] getData → primary_date=' + primaryDateId);
-
     // Construir schema correto usando forIds()
     var requestedSchema = getFields(showIds, primaryDateId).forIds(requestedFieldIds).build();
-
-    // ✅ BUG FIX: Reconstruir field objects para incluir date_primary
-    // Antes: usava request.fields (sem date_primary) → schema tinha N campos, dados N-1
-    // Depois: usa fieldObjects (com date_primary) → schema e dados têm N campos
-    var fieldObjects = requestedFieldIds.map(function(fieldId) {
-      return { name: fieldId };
-    });
 
     // Sempre calcular métricas (simplificado) + PASSAR configParams (Passo 4)
     var rows = transformRecords(
       allRecords,
-      fieldObjects,
+      request.fields,
       true,
       request.configParams
     );

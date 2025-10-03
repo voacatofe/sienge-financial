@@ -17,7 +17,6 @@ function transformRecords(records, requestedFields, calculateMetrics, configPara
 
   // Extrair primary_date da configuração
   var primaryDateId = (configParams && configParams.primary_date) || 'due_date';
-  LOGGING.info('[PRIMARY] transformRecords → primary_date=' + primaryDateId);
 
   // ✅ PERFORMANCE: Calcular 'today' UMA vez para todos os registros
   var todayDate = new Date();
@@ -173,24 +172,6 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics, primaryDat
 
   if (financeFields.indexOf(fieldName) !== -1) {
     return toNumber(record[fieldName], 0);
-  }
-
-  // ==========================================
-  // CAMPO VIRTUAL: date_primary
-  // ==========================================
-  // Este campo mapeia dinamicamente para o campo real escolhido na configuração
-
-  if (fieldName === 'date_primary') {
-    // Buscar o valor do campo real escolhido
-    var primaryValue = record[primaryDateId || 'due_date'];
-
-    // Fallback: se o campo escolhido estiver vazio, tentar outros campos de data
-    if (!primaryValue) {
-      primaryValue = record.due_date || record.payment_date || record.issue_date ||
-                     record.bill_date || record.installment_base_date || record.data_ultima_movimentacao;
-    }
-
-    return formatDate(primaryValue);
   }
 
   // ==========================================

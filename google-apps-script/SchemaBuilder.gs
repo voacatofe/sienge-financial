@@ -19,7 +19,7 @@
  * Permite uso de forIds() para filtrar campos solicitados
  *
  * @param {boolean} showIds - Se deve incluir campos de ID (padrão: false)
- * @param {string} primaryDateId - Campo de data real que será mapeado para date_primary (padrão: 'due_date')
+ * @param {string} primaryDateId - Campo de data que será marcado como padrão (padrão: 'due_date')
  */
 function getFields(showIds, primaryDateId) {
   var fields = cc.getFields();
@@ -35,8 +35,6 @@ function getFields(showIds, primaryDateId) {
   if (!primaryDateId) {
     primaryDateId = 'due_date';
   }
-
-  LOGGING.info('[PRIMARY] Building fields with primary_date mapping to: ' + primaryDateId);
 
   // ==========================================
   // GRUPO 1: IDs (16 campos) - OPCIONAL
@@ -162,26 +160,6 @@ function getFields(showIds, primaryDateId) {
     .setName('Data de Sincronização')
     .setType(types.YEAR_MONTH_DAY_HOUR)
     .setGroup('Basicos');
-
-  // ==========================================
-  // CAMPO VIRTUAL: DATA PRINCIPAL
-  // ==========================================
-  // Este é o PRIMEIRO campo de data (YEAR_MONTH_DAY) no schema, por isso
-  // o Looker Studio o usa como padrão para filtros de intervalo de data.
-  // Ele mapeia dinamicamente para o campo real escolhido na configuração.
-
-  fields.newDimension()
-    .setId('date_primary')
-    .setName('Data Principal')
-    .setDescription('Campo de data padrão definido na configuração. Mapeia para: ' + primaryDateId)
-    .setType(types.YEAR_MONTH_DAY)
-    .setGroup('Basicos');
-
-  LOGGING.info('[PRIMARY] Created date_primary field mapping to ' + primaryDateId);
-
-  // ==========================================
-  // CAMPOS DE DATA REAIS
-  // ==========================================
 
   fields.newDimension()
     .setId('due_date')
@@ -562,6 +540,8 @@ function getFields(showIds, primaryDateId) {
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
     .setGroup('Contas a Pagar');
+
+  fields.setDefaultDimension(primaryDateId);
 
   return fields;
 }
