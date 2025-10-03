@@ -11,12 +11,16 @@
 /**
  * Transforma array de registros para formato Looker Studio
  */
-function transformRecords(records, requestedFields, calculateMetrics) {
+function transformRecords(records, requestedFields, calculateMetrics, configParams) {
   LOGGING.info('Transforming ' + records.length + ' records...');
+
+  // Extrair primary_date da configuração
+  var primaryDateId = (configParams && configParams.primary_date) || 'due_date';
+  LOGGING.info('[PRIMARY] transformRecords → primary_date=' + primaryDateId);
 
   var rows = records.map(function(record) {
     var isIncome = record._recordType === CONFIG.RECORD_TYPE_INCOME;
-    return transformSingleRecord(record, requestedFields, isIncome, calculateMetrics);
+    return transformSingleRecord(record, requestedFields, isIncome, calculateMetrics, primaryDateId);
   });
 
   LOGGING.info('Transformation complete');
@@ -27,11 +31,11 @@ function transformRecords(records, requestedFields, calculateMetrics) {
 /**
  * Transforma um único registro para formato unificado
  */
-function transformSingleRecord(record, requestedFields, isIncome, calculateMetrics) {
+function transformSingleRecord(record, requestedFields, isIncome, calculateMetrics, primaryDateId) {
   var values = [];
 
   requestedFields.forEach(function(field) {
-    var value = getFieldValue(record, field.name, isIncome, calculateMetrics);
+    var value = getFieldValue(record, field.name, isIncome, calculateMetrics, primaryDateId);
     values.push(value);
   });
 
@@ -42,7 +46,7 @@ function transformSingleRecord(record, requestedFields, isIncome, calculateMetri
  * Retorna valor de um campo específico
  * Esta é a lógica CENTRAL de unificação
  */
-function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
+function getFieldValue(record, fieldName, isIncome, calculateMetrics, primaryDateId) {
   // ==========================================
   // GRUPO 1: IDENTIFICAÇÃO
   // ==========================================
@@ -146,6 +150,24 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
   }
 
   // ==========================================
+  // CAMPO VIRTUAL: date_primary
+  // ==========================================
+  // Este campo mapeia dinamicamente para o campo real escolhido na configuração
+
+  if (fieldName === 'date_primary') {
+    // Buscar o valor do campo real escolhido
+    var primaryValue = record[primaryDateId || 'due_date'];
+
+    // Fallback: se o campo escolhido estiver vazio, tentar outros campos de data
+    if (!primaryValue) {
+      primaryValue = record.due_date || record.payment_date || record.issue_date ||
+                     record.bill_date || record.installment_base_date || record.data_ultima_movimentacao;
+    }
+
+    return formatDate(primaryValue);
+  }
+
+  // ==========================================
   // GRUPO 7: DATAS (Campos comuns)
   // ==========================================
 
@@ -154,7 +176,8 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics) {
     'issue_date',
     'bill_date',
     'installment_base_date',
-    'payment_date'
+    'payment_date',
+    'data_ultima_movimentacao'
   ];
 
   if (dateFields.indexOf(fieldName) !== -1) {

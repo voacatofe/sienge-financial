@@ -19,9 +19,9 @@
  * Permite uso de forIds() para filtrar campos solicitados
  *
  * @param {boolean} showIds - Se deve incluir campos de ID (padrão: false)
- * @param {string} dateFieldPreference - Campo de data preferido para ser usado como padrão (padrão: 'due_date')
+ * @param {string} primaryDateId - Campo de data real que será mapeado para date_primary (padrão: 'due_date')
  */
-function getFields(showIds, dateFieldPreference) {
+function getFields(showIds, primaryDateId) {
   var fields = cc.getFields();
   var types = FIELD_TYPES;
   var aggregations = AGGREGATION_TYPES;
@@ -32,11 +32,23 @@ function getFields(showIds, dateFieldPreference) {
   }
 
   // Default: usar due_date se não especificado
-  if (!dateFieldPreference) {
-    dateFieldPreference = 'due_date';
+  if (!primaryDateId) {
+    primaryDateId = 'due_date';
   }
 
-  LOGGING.info('Building fields with date preference: ' + dateFieldPreference);
+  LOGGING.info('[PRIMARY] Building fields with primary_date mapping to: ' + primaryDateId);
+
+  // Mapeamento de labels
+  var dateLabels = {
+    'due_date': 'Data de Vencimento',
+    'payment_date': 'Data de Pagamento',
+    'issue_date': 'Data de Emissão',
+    'bill_date': 'Data da Conta',
+    'installment_base_date': 'Data Base da Parcela',
+    'data_ultima_movimentacao': 'Data da Última Movimentação'
+  };
+
+  var chosenLabel = dateLabels[primaryDateId] || primaryDateId;
 
   // ==========================================
   // GRUPO 1: IDs (16 campos) - OPCIONAL
@@ -147,7 +159,7 @@ function getFields(showIds, dateFieldPreference) {
   }
 
   // ==========================================
-  // GRUPO 2: BÁSICOS (8 campos)
+  // GRUPO 2: BÁSICOS (9 campos)
   // ==========================================
 
   fields.newDimension()
@@ -162,6 +174,26 @@ function getFields(showIds, dateFieldPreference) {
     .setName('Data de Sincronização')
     .setType(types.YEAR_MONTH_DAY_HOUR)
     .setGroup('Basicos');
+
+  // ==========================================
+  // CAMPO VIRTUAL: DATA PRINCIPAL
+  // ==========================================
+  // Este é o PRIMEIRO campo de data (YEAR_MONTH_DAY) no schema, por isso
+  // o Looker Studio o usa como padrão para filtros de intervalo de data.
+  // Ele mapeia dinamicamente para o campo real escolhido na configuração.
+
+  fields.newDimension()
+    .setId('date_primary')
+    .setName('📅 Data Principal (' + chosenLabel + ')')
+    .setDescription('Campo de data padrão. Definido na configuração da fonte. Mapeia para: ' + primaryDateId)
+    .setType(types.YEAR_MONTH_DAY)
+    .setGroup('Basicos');
+
+  LOGGING.info('[PRIMARY] Created date_primary field mapping to ' + primaryDateId);
+
+  // ==========================================
+  // CAMPOS DE DATA REAIS
+  // ==========================================
 
   fields.newDimension()
     .setId('due_date')
@@ -512,17 +544,6 @@ function getFields(showIds, dateFieldPreference) {
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
     .setGroup('Contas a Pagar');
-
-  // ==========================================
-  // CONFIGURAR CAMPO DE DATA PADRÃO
-  // ==========================================
-  // Define qual campo de data o Looker Studio deve usar como padrão
-  // para filtros de intervalo de data
-
-  if (dateFieldPreference) {
-    fields.setDefaultDimension(dateFieldPreference);
-    LOGGING.info('Set default date dimension: ' + dateFieldPreference);
-  }
 
   return fields;
 }

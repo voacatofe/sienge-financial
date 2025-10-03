@@ -71,23 +71,20 @@ function getConfig(request) {
   // ==========================================
   // Seleção do Campo de Data Principal
   // ==========================================
+  // IMPORTANTE: Este seletor define qual campo real será mapeado para o campo
+  // virtual "date_primary", que é o primeiro campo de data do schema
 
-  if (USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE) {
-    var dateSelect = config.newSelectSingle()
-      .setId(USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.id)
-      .setName(USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.name)
-      .setHelpText(USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.helpText)
-      .setAllowOverride(true);
-
-    // Adicionar opções
-    USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.options.forEach(function(option) {
-      dateSelect.addOption(
-        config.newOptionBuilder()
-          .setLabel(option.label)
-          .setValue(option.value)
-      );
-    });
-  }
+  config.newSelectSingle()
+    .setId('primary_date')
+    .setName('Data Principal')
+    .setHelpText('Qual data será o padrão da fonte (pode ser trocada por gráfico)')
+    .addOption(config.newOptionBuilder().setLabel('Data de Vencimento').setValue('due_date'))
+    .addOption(config.newOptionBuilder().setLabel('Data de Pagamento').setValue('payment_date'))
+    .addOption(config.newOptionBuilder().setLabel('Data de Emissão').setValue('issue_date'))
+    .addOption(config.newOptionBuilder().setLabel('Data da Conta').setValue('bill_date'))
+    .addOption(config.newOptionBuilder().setLabel('Data Base da Parcela').setValue('installment_base_date'))
+    .addOption(config.newOptionBuilder().setLabel('Data da Última Movimentação').setValue('data_ultima_movimentacao'))
+    .setAllowOverride(true);
 
   // ==========================================
   // Date Range (OBRIGATÓRIO para performance)
@@ -104,7 +101,7 @@ function getConfig(request) {
 
 /**
  * Retorna o schema de campos do conector
- * Schema com campos baseado em configuração (IDs opcionais)
+ * Schema com campos baseado em configuração (IDs opcionais + data principal)
  */
 function getSchema(request) {
   LOGGING.info('Building schema for Looker Studio');
@@ -116,18 +113,12 @@ function getSchema(request) {
   var showIdsKey = (USER_CONFIG_OPTIONS.SHOW_IDS && USER_CONFIG_OPTIONS.SHOW_IDS.id) || 'showIds';
   var showIds = request.configParams && request.configParams[showIdsKey] === 'true';
 
-  // Extrair preferência de campo de data
-  var dateFieldPrefKey = (USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE && USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.id) || 'dateFieldPreference';
-  var dateFieldPreference = request.configParams && request.configParams[dateFieldPrefKey];
+  // Extrair preferência de campo de data principal
+  var primaryDateId = (request.configParams && request.configParams.primary_date) || 'due_date';
 
-  // Usar default se não especificado
-  if (!dateFieldPreference) {
-    dateFieldPreference = 'due_date';
-  }
+  LOGGING.info('[PRIMARY] getSchema → primary_date=' + primaryDateId + ', showIds=' + showIds);
 
-  LOGGING.info('Schema built successfully. Show IDs: ' + showIds + ', Date Preference: ' + dateFieldPreference);
-
-  return { schema: getFields(showIds, dateFieldPreference).build() };
+  return { schema: getFields(showIds, primaryDateId).build() };
 }
 
 /**
@@ -208,25 +199,26 @@ function getData(request) {
     var showIdsKey = (USER_CONFIG_OPTIONS.SHOW_IDS && USER_CONFIG_OPTIONS.SHOW_IDS.id) || 'showIds';
     var showIds = request.configParams && request.configParams[showIdsKey] === 'true';
 
-    // Extrair preferência de campo de data
-    var dateFieldPrefKey = (USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE && USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.id) || 'dateFieldPreference';
-    var dateFieldPreference = request.configParams && request.configParams[dateFieldPrefKey];
+    // Extrair preferência de campo de data principal
+    var primaryDateId = (request.configParams && request.configParams.primary_date) || 'due_date';
 
-    // Usar default se não especificado
-    if (!dateFieldPreference) {
-      dateFieldPreference = 'due_date';
+    // Garantir que date_primary está sempre nas requestedFields (Passo 6)
+    if (requestedFieldIds.indexOf('date_primary') === -1) {
+      requestedFieldIds.unshift('date_primary');
+      LOGGING.info('[PRIMARY] Added date_primary to requested fields');
     }
 
-    LOGGING.info('getData using date preference: ' + dateFieldPreference);
+    LOGGING.info('[PRIMARY] getData → primary_date=' + primaryDateId);
 
     // Construir schema correto usando forIds()
-    var requestedSchema = getFields(showIds, dateFieldPreference).forIds(requestedFieldIds).build();
+    var requestedSchema = getFields(showIds, primaryDateId).forIds(requestedFieldIds).build();
 
-    // Sempre calcular métricas (simplificado)
+    // Sempre calcular métricas (simplificado) + PASSAR configParams (Passo 4)
     var rows = transformRecords(
       allRecords,
       request.fields,
-      true
+      true,
+      request.configParams
     );
 
     LOGGING.info('Transformation complete: ' + rows.length + ' rows');
