@@ -118,6 +118,9 @@ var USER_CONFIG_OPTIONS = {
       { label: 'Data de Emissão', value: 'issue_date' },
       { label: 'Data da Última Movimentação', value: 'data_ultima_movimentacao' }
     ]
+    // COMO FUNCIONA: O SchemaBuilder.gs usa fields.setDefaultDimension(dateFieldPreference)
+    // para marcar o campo escolhido como padrão. O Looker Studio então usa este campo
+    // automaticamente para novos filtros de intervalo de data e controles de date range.
   }
 };
 

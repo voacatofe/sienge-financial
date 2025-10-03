@@ -92,6 +92,10 @@ function getConfig(request) {
   // ==========================================
   // Date Range (OBRIGATÓRIO para performance)
   // ==========================================
+  // NOTA: Mantemos setDateRangeRequired(true) para garantir que filtros de data sejam
+  // sempre aplicados. O campo padrão é definido via fields.setDefaultDimension() no
+  // SchemaBuilder.gs, não aqui. Se mudássemos para false, o usuário teria que escolher
+  // manualmente o campo de data toda vez, o que não é desejado.
 
   config.setDateRangeRequired(true);
 
@@ -108,13 +112,22 @@ function getSchema(request) {
   // Validar configuração
   validateConfiguration(request.configParams);
 
-  // Passar configParams para getFields
+  // Extrair preferências de configuração
   var showIdsKey = (USER_CONFIG_OPTIONS.SHOW_IDS && USER_CONFIG_OPTIONS.SHOW_IDS.id) || 'showIds';
   var showIds = request.configParams && request.configParams[showIdsKey] === 'true';
 
-  LOGGING.info('Schema built successfully. Show IDs: ' + showIds);
+  // Extrair preferência de campo de data
+  var dateFieldPrefKey = (USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE && USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.id) || 'dateFieldPreference';
+  var dateFieldPreference = request.configParams && request.configParams[dateFieldPrefKey];
 
-  return { schema: getFields(showIds).build() };
+  // Usar default se não especificado
+  if (!dateFieldPreference) {
+    dateFieldPreference = 'due_date';
+  }
+
+  LOGGING.info('Schema built successfully. Show IDs: ' + showIds + ', Date Preference: ' + dateFieldPreference);
+
+  return { schema: getFields(showIds, dateFieldPreference).build() };
 }
 
 /**
@@ -191,12 +204,23 @@ function getData(request) {
     // Obter IDs dos campos solicitados
     var requestedFieldIds = request.fields.map(function(f) { return f.name; });
 
-    // Verificar configuração de IDs
+    // Extrair preferências de configuração
     var showIdsKey = (USER_CONFIG_OPTIONS.SHOW_IDS && USER_CONFIG_OPTIONS.SHOW_IDS.id) || 'showIds';
     var showIds = request.configParams && request.configParams[showIdsKey] === 'true';
 
+    // Extrair preferência de campo de data
+    var dateFieldPrefKey = (USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE && USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.id) || 'dateFieldPreference';
+    var dateFieldPreference = request.configParams && request.configParams[dateFieldPrefKey];
+
+    // Usar default se não especificado
+    if (!dateFieldPreference) {
+      dateFieldPreference = 'due_date';
+    }
+
+    LOGGING.info('getData using date preference: ' + dateFieldPreference);
+
     // Construir schema correto usando forIds()
-    var requestedSchema = getFields(showIds).forIds(requestedFieldIds).build();
+    var requestedSchema = getFields(showIds, dateFieldPreference).forIds(requestedFieldIds).build();
 
     // Sempre calcular métricas (simplificado)
     var rows = transformRecords(

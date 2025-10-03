@@ -19,8 +19,9 @@
  * Permite uso de forIds() para filtrar campos solicitados
  *
  * @param {boolean} showIds - Se deve incluir campos de ID (padrão: false)
+ * @param {string} dateFieldPreference - Campo de data preferido para ser usado como padrão (padrão: 'due_date')
  */
-function getFields(showIds) {
+function getFields(showIds, dateFieldPreference) {
   var fields = cc.getFields();
   var types = FIELD_TYPES;
   var aggregations = AGGREGATION_TYPES;
@@ -29,6 +30,13 @@ function getFields(showIds) {
   if (showIds === undefined) {
     showIds = false;
   }
+
+  // Default: usar due_date se não especificado
+  if (!dateFieldPreference) {
+    dateFieldPreference = 'due_date';
+  }
+
+  LOGGING.info('Building fields with date preference: ' + dateFieldPreference);
 
   // ==========================================
   // GRUPO 1: IDs (16 campos) - OPCIONAL
@@ -139,7 +147,7 @@ function getFields(showIds) {
   }
 
   // ==========================================
-  // GRUPO 2: BÁSICOS (7 campos)
+  // GRUPO 2: BÁSICOS (8 campos)
   // ==========================================
 
   fields.newDimension()
@@ -504,6 +512,17 @@ function getFields(showIds) {
     .setType(types.NUMBER)
     .setAggregation(aggregations.SUM)
     .setGroup('Contas a Pagar');
+
+  // ==========================================
+  // CONFIGURAR CAMPO DE DATA PADRÃO
+  // ==========================================
+  // Define qual campo de data o Looker Studio deve usar como padrão
+  // para filtros de intervalo de data
+
+  if (dateFieldPreference) {
+    fields.setDefaultDimension(dateFieldPreference);
+    LOGGING.info('Set default date dimension: ' + dateFieldPreference);
+  }
 
   return fields;
 }
