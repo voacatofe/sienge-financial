@@ -20,13 +20,22 @@ function fetchAllData(configParams, requestFilters) {
   var includeIncome = configParams.includeIncome !== 'false';
   var includeOutcome = configParams.includeOutcome !== 'false';
 
+  // NOVO: Capturar preferência de campo de data
+  var dateFieldPreference = configParams.dateFieldPreference || 'due_date';
+
   LOGGING.info('Fetching data from API: ' + apiUrl);
   LOGGING.info('Include Income: ' + includeIncome);
   LOGGING.info('Include Outcome: ' + includeOutcome);
+  LOGGING.info('Date Field Preference: ' + dateFieldPreference);
 
   // NOVO: Log dos filtros aplicados
   if (requestFilters) {
     LOGGING.info('Applying filters: ' + JSON.stringify(requestFilters));
+
+    // Adicionar campo de data preferencial aos filtros
+    if (!requestFilters.dateFieldPreference) {
+      requestFilters.dateFieldPreference = dateFieldPreference;
+    }
   }
 
   var allRecords = [];

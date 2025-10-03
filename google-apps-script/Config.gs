@@ -105,6 +105,19 @@ var USER_CONFIG_OPTIONS = {
     name: 'Mostrar campos de ID',
     helpText: 'Exibir campos técnicos de ID no relatório (IDs de empresa, projeto, cliente, etc)',
     defaultValue: false
+  },
+
+  DATE_FIELD_PREFERENCE: {
+    id: 'dateFieldPreference',
+    name: 'Campo de Data Principal',
+    helpText: 'Escolha qual campo de data usar como padrão para filtros de intervalo de data',
+    defaultValue: 'due_date',
+    options: [
+      { label: 'Data de Vencimento', value: 'due_date' },
+      { label: 'Data de Pagamento', value: 'payment_date' },
+      { label: 'Data de Emissão', value: 'issue_date' },
+      { label: 'Data da Última Movimentação', value: 'data_ultima_movimentacao' }
+    ]
   }
 };
 

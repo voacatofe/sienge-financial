@@ -69,6 +69,27 @@ function getConfig(request) {
   }
 
   // ==========================================
+  // Seleção do Campo de Data Principal
+  // ==========================================
+
+  if (USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE) {
+    var dateSelect = config.newSelectSingle()
+      .setId(USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.id)
+      .setName(USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.name)
+      .setHelpText(USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.helpText)
+      .setAllowOverride(true);
+
+    // Adicionar opções
+    USER_CONFIG_OPTIONS.DATE_FIELD_PREFERENCE.options.forEach(function(option) {
+      dateSelect.addOption(
+        config.newOptionBuilder()
+          .setLabel(option.label)
+          .setValue(option.value)
+      );
+    });
+  }
+
+  // ==========================================
   // Date Range (OBRIGATÓRIO para performance)
   // ==========================================
 
