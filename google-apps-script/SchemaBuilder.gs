@@ -38,18 +38,6 @@ function getFields(showIds, primaryDateId) {
 
   LOGGING.info('[PRIMARY] Building fields with primary_date mapping to: ' + primaryDateId);
 
-  // Mapeamento de labels
-  var dateLabels = {
-    'due_date': 'Data de Vencimento',
-    'payment_date': 'Data de Pagamento',
-    'issue_date': 'Data de Emissão',
-    'bill_date': 'Data da Conta',
-    'installment_base_date': 'Data Base da Parcela',
-    'data_ultima_movimentacao': 'Data da Última Movimentação'
-  };
-
-  var chosenLabel = dateLabels[primaryDateId] || primaryDateId;
-
   // ==========================================
   // GRUPO 1: IDs (16 campos) - OPCIONAL
   // ==========================================
@@ -184,8 +172,8 @@ function getFields(showIds, primaryDateId) {
 
   fields.newDimension()
     .setId('date_primary')
-    .setName('📅 Data Principal (' + chosenLabel + ')')
-    .setDescription('Campo de data padrão. Definido na configuração da fonte. Mapeia para: ' + primaryDateId)
+    .setName('Data Principal')
+    .setDescription('Campo de data padrão definido na configuração. Mapeia para: ' + primaryDateId)
     .setType(types.YEAR_MONTH_DAY)
     .setGroup('Basicos');
 
@@ -398,6 +386,36 @@ function getFields(showIds, primaryDateId) {
     .setDescription('Soma dos valores líquidos de todos os recebimentos/pagamentos')
     .setType(types.CURRENCY_BRL)
     .setAggregation(aggregations.SUM)
+    .setGroup('Financeiro');
+
+  // NOVAS MÉTRICAS: Aging e Inadimplência
+  fields.newMetric()
+    .setId('dias_atraso')
+    .setName('Dias em Atraso')
+    .setDescription('Quantidade de dias em atraso em relação à data de vencimento (0 se não vencido)')
+    .setType(types.NUMBER)
+    .setAggregation(aggregations.MAX)
+    .setGroup('Financeiro');
+
+  fields.newDimension()
+    .setId('faixa_aging')
+    .setName('Faixa de Aging')
+    .setDescription('Classificação: Atual, 1-30 dias, 31-60 dias, 61-90 dias, 90+ dias')
+    .setType(types.TEXT)
+    .setGroup('Financeiro');
+
+  fields.newMetric()
+    .setId('taxa_inadimplencia')
+    .setName('Taxa de Inadimplência (%)')
+    .setDescription('Percentual do saldo em relação ao valor original')
+    .setType(types.PERCENT)
+    .setGroup('Financeiro');
+
+  fields.newDimension()
+    .setId('situacao_vencimento')
+    .setName('Situação de Vencimento')
+    .setDescription('A Vencer, Vencido, Pago')
+    .setType(types.TEXT)
     .setGroup('Financeiro');
 
   // ==========================================

@@ -358,6 +358,7 @@ function fetchWithRetry(url, cache, cacheKey) {
 /**
  * Valida estrutura de dados do cache
  * ✅ SECURITY: Previne cache poisoning
+ * ✅ PERFORMANCE: Limite aumentado para 100k registros (ambientes de produção)
  */
 function validateCachedData(data) {
   if (!data || typeof data !== 'object') {
@@ -375,8 +376,10 @@ function validateCachedData(data) {
   }
 
   // Valida tamanho razoável (proteção contra DoS)
-  if (data.data.length > 50000) {
-    LOGGING.warn('Cached data suspiciously large: ' + data.data.length + ' records');
+  // Aumentado de 50k para 100k para suportar ambientes de produção
+  var MAX_CACHED_RECORDS = 100000;
+  if (data.data.length > MAX_CACHED_RECORDS) {
+    LOGGING.warn('Cached data exceeds maximum: ' + data.data.length + ' records (max: ' + MAX_CACHED_RECORDS + ')');
     return false;
   }
 
@@ -435,16 +438,28 @@ function createUserError(message, details) {
 }
 
 /**
- * Trata erros de fetch da API
+ * Trata erros de fetch da API com contexto detalhado
  */
 function handleFetchError(error, endpoint) {
   var message = ERROR_MESSAGES.API_CONNECTION_FAILED;
+  var debugDetails = 'Endpoint: ' + endpoint + '\nError: ' + error.toString();
 
-  if (error.message && error.message.indexOf('HTTP') !== -1) {
-    message = 'Erro ao acessar API: ' + error.message;
+  // Identificar tipo específico de erro
+  if (error.message) {
+    if (error.message.indexOf('timeout') !== -1) {
+      message = ERROR_MESSAGES.FETCH_TIMEOUT + '\n\n📍 Endpoint afetado:\n' + endpoint;
+    } else if (error.message.indexOf('HTTP 404') !== -1) {
+      message = 'Endpoint não encontrado (404).\n\n📍 URL tentada:\n' + endpoint + '\n\n🔧 Verifique:\n• Endpoint existe?\n• API está na versão correta?\n• Path está correto?';
+    } else if (error.message.indexOf('HTTP 500') !== -1) {
+      message = 'Erro interno do servidor (500).\n\n📍 Endpoint:\n' + endpoint + '\n\n🔧 Ações:\n• Verifique logs da API\n• Teste endpoint diretamente\n• Valide dados de entrada';
+    } else if (error.message.indexOf('HTTP 401') !== -1 || error.message.indexOf('HTTP 403') !== -1) {
+      message = 'Acesso negado (401/403).\n\n📍 Endpoint:\n' + endpoint + '\n\n🔧 Verifique:\n• Credenciais corretas?\n• Token válido?\n• Permissões adequadas?';
+    } else if (error.message.indexOf('HTTP') !== -1) {
+      message = 'Erro HTTP: ' + error.message + '\n\n📍 Endpoint:\n' + endpoint + '\n\n🔍 Consulte código HTTP para mais detalhes';
+    }
   }
 
-  return createUserError(message, 'Endpoint: ' + endpoint + ', Error: ' + error.toString());
+  return createUserError(message, debugDetails);
 }
 
 // ==========================================

@@ -10,6 +10,7 @@
 
 /**
  * Transforma array de registros para formato Looker Studio
+ * ✅ PERFORMANCE: Cache de métricas calculadas + data otimizada
  */
 function transformRecords(records, requestedFields, calculateMetrics, configParams) {
   LOGGING.info('Transforming ' + records.length + ' records...');
@@ -18,9 +19,32 @@ function transformRecords(records, requestedFields, calculateMetrics, configPara
   var primaryDateId = (configParams && configParams.primary_date) || 'due_date';
   LOGGING.info('[PRIMARY] transformRecords → primary_date=' + primaryDateId);
 
+  // ✅ PERFORMANCE: Calcular 'today' UMA vez para todos os registros
+  var todayDate = new Date();
+
+  // ✅ PERFORMANCE: Verificar se aging está habilitado
+  var calculateAging = configParams && configParams.calculateAging !== 'false';
+
+  // ✅ PERFORMANCE: Extrair nomes dos campos solicitados para lazy evaluation
+  var requestedFieldNames = requestedFields.map(function(f) { return f.name; });
+
+  // Verificar se alguma métrica de aging foi solicitada
+  var agingMetrics = ['dias_atraso', 'faixa_aging', 'taxa_inadimplencia', 'situacao_vencimento'];
+  var needsAgingCache = calculateMetrics && calculateAging && agingMetrics.some(function(metric) {
+    return requestedFieldNames.indexOf(metric) !== -1;
+  });
+
+  LOGGING.info('[LAZY] Aging cache needed: ' + needsAgingCache + ' (calculateMetrics=' + calculateMetrics + ', calculateAging=' + calculateAging + ')');
+
   var rows = records.map(function(record) {
     var isIncome = record._recordType === CONFIG.RECORD_TYPE_INCOME;
-    return transformSingleRecord(record, requestedFields, isIncome, calculateMetrics, primaryDateId);
+
+    // ✅ PERFORMANCE: Lazy evaluation - só criar cache se métricas de aging foram solicitadas
+    if (needsAgingCache && !record._metricsCache) {
+      record._metricsCache = {};
+    }
+
+    return transformSingleRecord(record, requestedFields, isIncome, calculateMetrics, primaryDateId, todayDate, calculateAging);
   });
 
   LOGGING.info('Transformation complete');
@@ -30,12 +54,13 @@ function transformRecords(records, requestedFields, calculateMetrics, configPara
 
 /**
  * Transforma um único registro para formato unificado
+ * ✅ PERFORMANCE: Passa todayDate e calculateAging
  */
-function transformSingleRecord(record, requestedFields, isIncome, calculateMetrics, primaryDateId) {
+function transformSingleRecord(record, requestedFields, isIncome, calculateMetrics, primaryDateId, todayDate, calculateAging) {
   var values = [];
 
   requestedFields.forEach(function(field) {
-    var value = getFieldValue(record, field.name, isIncome, calculateMetrics, primaryDateId);
+    var value = getFieldValue(record, field.name, isIncome, calculateMetrics, primaryDateId, todayDate, calculateAging);
     values.push(value);
   });
 
@@ -45,8 +70,9 @@ function transformSingleRecord(record, requestedFields, isIncome, calculateMetri
 /**
  * Retorna valor de um campo específico
  * Esta é a lógica CENTRAL de unificação
+ * ✅ PERFORMANCE: Cache de métricas + todayDate pré-calculado + toggle aging
  */
-function getFieldValue(record, fieldName, isIncome, calculateMetrics, primaryDateId) {
+function getFieldValue(record, fieldName, isIncome, calculateMetrics, primaryDateId, todayDate, calculateAging) {
   // ==========================================
   // GRUPO 1: IDENTIFICAÇÃO
   // ==========================================
@@ -229,6 +255,150 @@ function getFieldValue(record, fieldName, isIncome, calculateMetrics, primaryDat
     if (!calculateMetrics) return CONFIG.STATUS_PENDING;
 
     return calculatePaymentStatus(record, isIncome);
+  }
+
+  // ==========================================
+  // NOVAS MÉTRICAS: Aging e Inadimplência
+  // ==========================================
+
+  if (fieldName === 'dias_atraso') {
+    // ✅ PERFORMANCE: Retornar 0 se aging desabilitado
+    if (!calculateMetrics || !calculateAging) return 0;
+
+    // ✅ PERFORMANCE: Verificar cache primeiro
+    if (record._metricsCache && record._metricsCache.dias_atraso !== undefined) {
+      return record._metricsCache.dias_atraso;
+    }
+
+    // Calcula dias em atraso
+    var dueDate = new Date(record.due_date);
+    // ✅ PERFORMANCE: Usa todayDate pré-calculado ao invés de new Date()
+
+    // Se não tem data de vencimento, retorna 0
+    if (!record.due_date || isNaN(dueDate.getTime())) {
+      if (record._metricsCache) record._metricsCache.dias_atraso = 0;
+      return 0;
+    }
+
+    // Se já foi pago (saldo zero), não está em atraso
+    var balance = toNumber(record.balance_amount, 0);
+    if (balance <= 0.01) {
+      if (record._metricsCache) record._metricsCache.dias_atraso = 0;
+      return 0;
+    }
+
+    // Calcular diferença em dias
+    var diffTime = todayDate - dueDate;
+    var diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    // Se ainda não venceu, retorna 0
+    var result = diffDays > 0 ? diffDays : 0;
+
+    // ✅ PERFORMANCE: Cachear resultado
+    if (record._metricsCache) record._metricsCache.dias_atraso = result;
+
+    return result;
+  }
+
+  if (fieldName === 'faixa_aging') {
+    // ✅ PERFORMANCE: Retornar N/A se aging desabilitado
+    if (!calculateMetrics || !calculateAging) return 'N/A';
+
+    // ✅ PERFORMANCE: Verificar cache primeiro
+    if (record._metricsCache && record._metricsCache.faixa_aging !== undefined) {
+      return record._metricsCache.faixa_aging;
+    }
+
+    // ✅ PERFORMANCE: Reutiliza lógica de dias_atraso (que agora está cacheado!)
+    var diasAtraso = getFieldValue(record, 'dias_atraso', isIncome, true, primaryDateId, todayDate, calculateAging);
+
+    var faixa;
+    if (diasAtraso === 0) {
+      var balance = toNumber(record.balance_amount, 0);
+      if (balance <= 0.01) {
+        faixa = 'Pago';
+      } else {
+        faixa = 'Atual (A Vencer)';
+      }
+    } else if (diasAtraso <= 30) {
+      faixa = '1-30 dias';
+    } else if (diasAtraso <= 60) {
+      faixa = '31-60 dias';
+    } else if (diasAtraso <= 90) {
+      faixa = '61-90 dias';
+    } else {
+      faixa = '90+ dias';
+    }
+
+    // ✅ PERFORMANCE: Cachear resultado
+    if (record._metricsCache) record._metricsCache.faixa_aging = faixa;
+
+    return faixa;
+  }
+
+  if (fieldName === 'taxa_inadimplencia') {
+    // ✅ PERFORMANCE: Retornar 0 se aging desabilitado
+    if (!calculateMetrics || !calculateAging) return 0;
+
+    // ✅ PERFORMANCE: Verificar cache primeiro
+    if (record._metricsCache && record._metricsCache.taxa_inadimplencia !== undefined) {
+      return record._metricsCache.taxa_inadimplencia;
+    }
+
+    var original = toNumber(record.original_amount, 0);
+    var balance = toNumber(record.balance_amount, 0);
+
+    // Evita divisão por zero
+    if (original === 0) {
+      if (record._metricsCache) record._metricsCache.taxa_inadimplencia = 0;
+      return 0;
+    }
+
+    // Taxa = (saldo / original) * 100
+    // Se saldo é zero, não há inadimplência (0%)
+    // Se saldo = original, inadimplência total (100%)
+    var taxa = (balance / original) * 100;
+
+    // ✅ PERFORMANCE: Cachear resultado
+    if (record._metricsCache) record._metricsCache.taxa_inadimplencia = taxa;
+
+    return taxa;
+  }
+
+  if (fieldName === 'situacao_vencimento') {
+    // ✅ PERFORMANCE: Retornar N/A se aging desabilitado
+    if (!calculateMetrics || !calculateAging) return 'N/A';
+
+    // ✅ PERFORMANCE: Verificar cache primeiro
+    if (record._metricsCache && record._metricsCache.situacao_vencimento !== undefined) {
+      return record._metricsCache.situacao_vencimento;
+    }
+
+    var balance = toNumber(record.balance_amount, 0);
+
+    var situacao;
+
+    // Pago
+    if (balance <= 0.01) {
+      situacao = 'Pago';
+    } else {
+      // Vencido ou A Vencer
+      var dueDate = new Date(record.due_date);
+      // ✅ PERFORMANCE: Usa todayDate pré-calculado
+
+      if (!record.due_date || isNaN(dueDate.getTime())) {
+        situacao = 'Sem vencimento';
+      } else if (dueDate < todayDate) {
+        situacao = 'Vencido';
+      } else {
+        situacao = 'A Vencer';
+      }
+    }
+
+    // ✅ PERFORMANCE: Cachear resultado
+    if (record._metricsCache) record._metricsCache.situacao_vencimento = situacao;
+
+    return situacao;
   }
 
   // ==========================================

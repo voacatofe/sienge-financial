@@ -15,7 +15,7 @@ var cc = DataStudioApp.createCommunityConnector();
 // ==========================================
 
 var CONFIG = {
-  // API Configuration (FIXED - não solicita ao usuário)
+  // API Configuration (FIXED - uso interno)
   API_URL: 'https://sienge-app.hvlihi.easypanel.host',
   MAX_RECORDS_PER_REQUEST: 1000,
 
@@ -68,13 +68,19 @@ var AGGREGATION_TYPES = cc.AggregationType;
 // ==========================================
 
 var ERROR_MESSAGES = {
-  MISSING_API_URL: 'URL da API não configurada. Por favor, configure a URL da API.',
-  INVALID_API_URL: 'URL da API inválida. Verifique o formato (ex: http://localhost:8000)',
-  API_CONNECTION_FAILED: 'Falha ao conectar com a API. Verifique se o servidor está ativo.',
-  NO_DATA_RETURNED: 'Nenhum dado retornado pela API.',
-  INVALID_JSON_RESPONSE: 'Resposta inválida da API. Esperado JSON válido.',
-  FETCH_TIMEOUT: 'Timeout ao buscar dados da API. Tente novamente.',
-  UNKNOWN_ERROR: 'Erro desconhecido ao processar dados.'
+  MISSING_API_URL: 'URL da API não configurada.\n\n📝 Solução: Configure a URL da API nas configurações da fonte de dados.\nExemplo: http://localhost:8000 ou https://api.empresa.com',
+
+  INVALID_API_URL: 'URL da API inválida.\n\n📝 Formato esperado:\n• http://servidor:porta\n• https://dominio.com\n\n❌ Não use:\n• URLs sem protocolo (http/https)\n• Espaços ou caracteres especiais',
+
+  API_CONNECTION_FAILED: 'Falha ao conectar com a API.\n\n🔍 Verifique:\n• API está rodando?\n• URL está correta?\n• Firewall bloqueando?\n• Rede acessível?',
+
+  NO_DATA_RETURNED: 'Nenhum dado retornado pela API.\n\n🔍 Possíveis causas:\n• Filtros muito restritivos\n• Período sem dados\n• API sem registros\n• Ambos "Income" e "Outcome" desmarcados',
+
+  INVALID_JSON_RESPONSE: 'Resposta inválida da API.\n\n📝 Esperado:\n{\n  "success": true,\n  "count": 100,\n  "data": [...]\n}\n\n🔧 Verifique:\n• Endpoint retorna JSON válido\n• Estrutura da resposta está correta',
+
+  FETCH_TIMEOUT: 'Timeout ao buscar dados (limite: 30s).\n\n🔧 Soluções:\n• Reduza o período de datas\n• Desmarque "Calcular Métricas"\n• Verifique performance da API\n• Use filtros para reduzir dados',
+
+  UNKNOWN_ERROR: 'Erro desconhecido ao processar dados.\n\n🔍 Verifique os logs do Apps Script:\n1. Extensões > Apps Script\n2. Execuções\n3. Busque detalhes do erro'
 };
 
 // ==========================================
@@ -105,6 +111,13 @@ var USER_CONFIG_OPTIONS = {
     name: 'Mostrar campos de ID',
     helpText: 'Exibir campos técnicos de ID no relatório (IDs de empresa, projeto, cliente, etc)',
     defaultValue: false
+  },
+
+  CALCULATE_AGING: {
+    id: 'calculateAging',
+    name: 'Calcular Métricas de Aging',
+    helpText: '✅ PERFORMANCE: Desmarque para melhorar velocidade (desabilita dias_atraso, faixa_aging, taxa_inadimplencia, situacao_vencimento)',
+    defaultValue: true
   },
 
   DATE_FIELD_PREFERENCE: {

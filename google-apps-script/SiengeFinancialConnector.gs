@@ -68,6 +68,13 @@ function getConfig(request) {
       .setAllowOverride(true);
   }
 
+  // ✅ PERFORMANCE: Toggle para métricas de aging
+  config.newCheckbox()
+    .setId(USER_CONFIG_OPTIONS.CALCULATE_AGING.id)
+    .setName(USER_CONFIG_OPTIONS.CALCULATE_AGING.name)
+    .setHelpText(USER_CONFIG_OPTIONS.CALCULATE_AGING.helpText)
+    .setAllowOverride(true);
+
   // ==========================================
   // Seleção do Campo de Data Principal
   // ==========================================
@@ -213,10 +220,17 @@ function getData(request) {
     // Construir schema correto usando forIds()
     var requestedSchema = getFields(showIds, primaryDateId).forIds(requestedFieldIds).build();
 
+    // ✅ BUG FIX: Reconstruir field objects para incluir date_primary
+    // Antes: usava request.fields (sem date_primary) → schema tinha N campos, dados N-1
+    // Depois: usa fieldObjects (com date_primary) → schema e dados têm N campos
+    var fieldObjects = requestedFieldIds.map(function(fieldId) {
+      return { name: fieldId };
+    });
+
     // Sempre calcular métricas (simplificado) + PASSAR configParams (Passo 4)
     var rows = transformRecords(
       allRecords,
-      request.fields,
+      fieldObjects,
       true,
       request.configParams
     );
@@ -243,7 +257,6 @@ function getData(request) {
 
 /**
  * Valida a configuração do usuário
- * SIMPLIFICADO: URL é fixa, só valida checkboxes
  */
 function validateConfiguration(configParams) {
   // Validar que pelo menos um tipo está selecionado
@@ -258,6 +271,7 @@ function validateConfiguration(configParams) {
   }
 
   LOGGING.info('Configuration validated successfully');
+  LOGGING.info('Using API URL (fixed): ' + CONFIG.API_URL);
   return true;
 }
 
